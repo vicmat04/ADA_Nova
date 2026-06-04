@@ -1,0 +1,54 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+bin/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# PyInstaller
+#  Usually these written by a python script before a windows build
+#  or as part of a release. If they are config specs, keep them if needed,
+#  but build/ and dist/ must be ignored.
+# *.spec (if you want to track spec files, don't ignore them. We have ADA_Driverless_4.0.*.spec which we want to track, so we don't ignore *.spec)
+
+# Installer files and huge binaries
+*.exe
+*.msi
+*.zip
+*.tar.gz
+
+# Local configuration and data files
+configADA.json
+credentials.json
+bitacora_offline.json
+session_current.json
+*.csv
+*.xlsx
+*.log
+
+# Agent files
+.agent/
+.antigravity/
+.gemini/
+graphify-out/

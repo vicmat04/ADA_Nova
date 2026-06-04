@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Informe Ejecutivo</title>
+    <style>
+        @page {
+            size: letter;
+            margin: 15mm;
+            @bottom-right {
+                content: "Página " counter(page) " de " counter(pages);
+                font-family: Arial, Helvetica, sans-serif;
+                font-size: 8pt;
+                color: #555555;
+            }
+        }
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            color: #2c3e50;
+            line-height: 1.4;
+            margin: 0;
+            padding: 0;
+        }
+        .header {
+            display: flex;
+            align-items: center;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+        }
+        .logo {
+            width: 110px;
+            height: auto;
+            margin-right: 20px;
+        }
+        .header-content {
+            flex-grow: 1;
+            text-align: right;
+        }
+        .header-content h1 {
+            margin: 0;
+            font-size: 22pt;
+            color: #2980b9;
+        }
+        .header-content h2 {
+            margin: 5px 0 0;
+            font-size: 14pt;
+            font-weight: bold;
+            color: #34495e;
+        }
+        .report-meta {
+            background-color: #ecf0f1;
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 25px;
+            font-size: 10pt;
+        }
+        .report-meta table {
+            width: 100%;
+            border: none;
+            margin-bottom: 0;
+        }
+        .report-meta table td {
+            border: none;
+            padding: 4px;
+            text-align: left;
+            width: 33%;
+        }
+        .meta-item strong {
+            color: #2980b9;
+            display: block;
+            margin-bottom: 2px;
+        }
+        .section-title {
+            font-size: 14pt;
+            color: #2980b9;
+            border-bottom: 1px solid #bdc3c7;
+            padding-bottom: 4px;
+            margin-top: 25px;
+            margin-bottom: 15px;
+        }
+        .kpi-container {
+            margin-bottom: 25px;
+        }
+        .kpi-container table {
+            width: 100%;
+            border: none;
+        }
+        .kpi-container table td {
+            border: 1px solid #e0e0e0;
+            background-color: #f8f9fa;
+            border-radius: 6px;
+            padding: 12px;
+            text-align: center;
+        }
+        .kpi-value {
+            font-size: 16pt;
+            font-weight: bold;
+            color: #3498db;
+            margin-bottom: 4px;
+        }
+        .kpi-label {
+            font-size: 9pt;
+            color: #7f8c8d;
+            text-transform: uppercase;
+        }
+        table.data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 25px;
+            font-size: 8.5pt;
+        }
+        table.data-table th, table.data-table td {
+            padding: 6px 4px;
+            text-align: center;
+            border: 1px solid #bdc3c7;
+        }
+        table.data-table th {
+            background-color: #3498db;
+            color: white;
+            font-weight: bold;
+            font-size: 8pt;
+        }
+        table.data-table tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        .table-total {
+            background-color: #2c3e50 !important;
+            color: white;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <table style="width: 100%; border: none;">
+            <tr>
+                <td style="border: none; text-align: left; width: 130px;">
+                    <img src="{{ logo_path }}" class="logo" alt="Logo Infoplaza">
+                </td>
+                <td style="border: none; text-align: right;">
+                    <div class="header-content">
+                        <h1>Informe Ejecutivo</h1>
+                        <h2>Infoplaza: {{ infoplaza_nombre }}</h2>
+                    </div>
+                </td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="report-meta">
+        <table>
+            <tr>
+                <td>
+                    <span class="meta-item">
+                        <strong>Período del Reporte:</strong>
+                        {{ fecha_inicio }} al {{ fecha_fin }}
+                    </span>
+                </td>
+                <td>
+                    <span class="meta-item">
+                        <strong>Equipos Disponibles:</strong>
+                        {{ total_pcs }} PCs operativos
+                    </span>
+                </td>
+                <td>
+                    <span class="meta-item">
+                        <strong>Meta Mensual General:</strong>
+                        {{ meta_mensual }} visitas esperadas
+                    </span>
+                </td>
+            </tr>
+        </table>
+    </div>
+
+    <h3 class="section-title">Resumen General (KPI)</h3>
+    <div class="kpi-container">
+        <table style="width: 100%;">
+            <tr>
+                <td style="width: 33%;">
+                    <div class="kpi-value">{{ kpis['Masculino'] }}</div>
+                    <div class="kpi-label">Hombres</div>
+                </td>
+                <td style="width: 33%;">
+                    <div class="kpi-value">{{ kpis['Femenino'] }}</div>
+                    <div class="kpi-label">Mujeres</div>
+                </td>
+                <td style="width: 34%; background-color: #ebf5fb; border-color: #3498db;">
+                    <div class="kpi-value" style="color: #2980b9;">{{ kpis['Total_General'] }}</div>
+                    <div class="kpi-label" style="color: #2980b9; font-weight: bold;">TOTAL VISITAS</div>
+                </td>
+            </tr>
+        </table>
+    </div>
+
+    <h3 class="section-title">Resumen de Visitas por Mes</h3>
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>MES</th>
+                <th>Masculino</th>
+                <th>Femenino</th>
+                <th>Primaria</th>
+                <th>Secundaria</th>
+                <th>Universidad</th>
+                <th>Docentes</th>
+                <th>Tercera Edad</th>
+                <th>Público Gral.</th>
+                <th>TOTAL</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in tabla_resumen %}
+            <tr {% if row['MES'] == 'TOTAL GENERAL' %}class="table-total"{% endif %}>
+                <td>{{ row['MES'] }}</td>
+                <td>{{ row['Masculino'] }}</td>
+                <td>{{ row['Femenino'] }}</td>
+                <td>{{ row['Primaria'] }}</td>
+                <td>{{ row['Secundaria'] }}</td>
+                <td>{{ row['Universitarios'] }}</td>
+                <td>{{ row['Docentes'] }}</td>
+                <td>{{ row['Tercera Edad'] }}</td>
+                <td>{{ row['Público General'] }}</td>
+                <td><strong>{{ row['TOTAL USUARIOS'] }}</strong></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <h3 class="section-title">Rendimiento Mensual vs Meta</h3>
+    <table class="data-table" style="width: 80%; margin: 0 auto;">
+        <thead>
+            <tr>
+                <th>MES</th>
+                <th>Visitas Logradas</th>
+                <th>Meta del Mes</th>
+                <th>% Cumplimiento</th>
+                <th>Estado</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in tabla_rendimiento %}
+            <tr {% if row['MES'] == 'TOTAL GENERAL' %}class="table-total"{% endif %}>
+                <td>{{ row['MES'] }}</td>
+                <td>{{ row['Total Visitas'] }}</td>
+                <td>{{ row['Meta'] }}</td>
+                <td>{{ "%.2f"|format(row['Porcentaje']) }}%</td>
+                <td style="font-weight: bold; color: {% if row['Porcentaje'] >= 30 %}#27ae60{% elif row['Porcentaje'] >= 20 %}#f39c12{% else %}#c0392b{% endif %};">
+                    {% if row['MES'] == 'TOTAL GENERAL' %}
+                        {% if row['Porcentaje'] >= 30 %}✅ CUMPLE
+                        {% elif row['Porcentaje'] >= 20 %}⚠️ PARCIAL
+                        {% else %}❌ NO CUMPLE{% endif %}
+                    {% else %}
+                        {% if row['Porcentaje'] >= 30 %}✅ Cumple
+                        {% elif row['Porcentaje'] >= 20 %}⚠️ Parcial
+                        {% else %}❌ No cumple{% endif %}
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+</body>
+</html>

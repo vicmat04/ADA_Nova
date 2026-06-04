@@ -1,0 +1,1829 @@
+/* ADA NOVA PREMIUM - GLOBAL STYLESHEET */
+
+/* --- TYPOGRAPHY & BASE --- */
+* {
+    font-family: 'Segoe UI', 'Inter', system-ui, sans-serif;
+    outline: none;
+}
+
+QMainWindow, QDialog {
+    background-color: #f8fafc; /* Light: Slate 50 */
+    color: #334155; /* Light: Slate 700 */
+}
+
+/* --- TYPOGRAPHY CLASSES (Applied via setProperty("class", "...")) --- */
+QLabel[class="h1"] {
+    font-size: 24px;
+    font-weight: 800;
+    color: #0f172a; /* Slate 900 */
+    margin-bottom: 10px;
+}
+
+QLabel[class="h2"] {
+    font-size: 16px;
+    font-weight: 700;
+    color: #334155; /* Slate 700 */
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 5px;
+}
+
+QLabel[class="h3"] {
+    font-size: 24px;
+    font-weight: 700;
+    color: #334155; /* Slate 700 */
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    margin-bottom: 5px;
+}
+
+QLabel[class="body"] {
+    font-size: 13px;
+    color: #475569; /* Slate 600 */
+}
+
+QLabel[class="body-large"] {
+    font-size: 24px;
+    font-weight: 400;  /* Peso normal, sin negrita */
+    color: #475569; /* Slate 600 */
+}
+
+QLabel[class="subtitle"] {
+    font-size: 12px;
+    color: #94a3b8; /* Slate 400 */
+    font-style: italic;
+}
+
+/* ============================================================
+   MÓDULO DE METAS - Estilos Específicos
+   ============================================================ */
+   
+/* Header del Módulo de Metas */
+QFrame[class="Header"] {
+    background-color: transparent;
+    border-bottom: 2px solid #e2e8f0;
+    padding: 20px;
+}
+QMainWindow[theme="dark"] QFrame[class="Header"] {
+    border-bottom-color: #334155;
+}
+
+/* ID Symbol y Value en Header */
+QLabel[class="IdSymbol"] {
+    color: #94a3b8;
+    font-size: 32px;
+    font-weight: 400;
+}
+QMainWindow[theme="dark"] QLabel[class="IdSymbol"] {
+    color: #64748b;
+}
+
+QLabel[class="IdValue"] {
+    color: #0f172a;
+    font-size: 56px;
+    font-weight: 300;
+}
+QMainWindow[theme="dark"] QLabel[class="IdValue"] {
+    color: #f1f5f9;
+}
+
+/* Divider */
+QFrame[class="Divider"] {
+    background-color: #cbd5e1;
+}
+QMainWindow[theme="dark"] QFrame[class="Divider"] {
+    background-color: #475569;
+}
+
+/* Timeline y Secciones de Metas */
+QFrame[class="Timeline"],
+QFrame[class="MetaSection"] {
+    background-color: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 15px;
+}
+QMainWindow[theme="dark"] QFrame[class="Timeline"],
+QMainWindow[theme="dark"] QFrame[class="MetaSection"] {
+    background-color: #1e293b;
+    border-color: #334155;
+}
+
+/* Botones de Metas (CARGAR CSV, EXPORTAR PDF, etc.) */
+QPushButton[class="MetaActionButton"] {
+    background-color: #0ea5e9;
+    color: #ffffff;
+    border: none;
+    border-radius: 8px;
+    padding: 12px 24px;
+    font-size: 14px;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+QPushButton[class="MetaActionButton"]:hover {
+    background-color: #0284c7;
+}
+QPushButton[class="MetaActionButton"]:pressed {
+    background-color: #0369a1;
+}
+
+/* Botón de éxito (verde) */
+QPushButton[class="MetaSuccessButton"] {
+    background-color: #10b981;
+    color: #ffffff;
+    border: none;
+    border-radius: 8px;
+    padding: 12px 24px;
+    font-size: 14px;
+    font-weight: 700;
+}
+QPushButton[class="MetaSuccessButton"]:hover {
+    background-color: #059669;
+}
+
+/* Botón de advertencia (amarillo/naranja) */
+QPushButton[class="MetaWarningButton"] {
+    background-color: #f59e0b;
+    color: #ffffff;
+    border: none;
+    border-radius: 8px;
+    padding: 12px 24px;
+    font-size: 14px;
+    font-weight: 700;
+}
+QPushButton[class="MetaWarningButton"]:hover {
+    background-color: #d97706;
+}
+
+/* Labels de información de metas */
+QLabel[class="MetaInfo"] {
+    font-size: 14px;
+    font-weight: 500;
+    color: #475569;
+}
+QMainWindow[theme="dark"] QLabel[class="MetaInfo"] {
+    color: #cbd5e1;
+}
+
+QLabel[class="MetaValue"] {
+    font-size: 18px;
+    font-weight: 700;
+    color: #0f172a;
+}
+QMainWindow[theme="dark"] QLabel[class="MetaValue"] {
+    color: #ffffff;
+}
+
+/* --- CARDS & CONTAINERS --- */
+/* Container class for main tab widgets */
+.Container {
+    background-color: #f8fafc;
+}
+QMainWindow[theme="dark"] .Container {
+    background-color: #0f172a;
+}
+
+.Card, QGroupBox[class="Card"], QFrame[class="Card"] {
+    background-color: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    padding: 15px;
+}
+
+/* Selector fix: Specific parent targeting for Dark Mode */
+QMainWindow[theme="dark"] .Card, 
+QMainWindow[theme="dark"] QGroupBox[class="Card"], 
+QMainWindow[theme="dark"] QFrame[class="Card"] {
+    background-color: #1e293b; /* Slate 800 */
+    border: 1px solid #334155;
+    color: #f1f5f9;
+}
+
+/* GroupBox Title Fix */
+QGroupBox[class="Card"] {
+    margin-top: 25px; 
+    font-size: 14px;
+    font-weight: 700;
+    color: #334155;
+}
+/* Force white title in dark mode */
+QMainWindow[theme="dark"] QGroupBox[class="Card"] {
+    border-color: #475569;
+    color: #ffffff;
+}
+QMainWindow[theme="dark"] QGroupBox[class="Card"]::title {
+    color: #ffffff;
+}
+
+/* Selector Directo para Cards (redundancia) */
+QGroupBox[class="Card"][theme="dark"],
+QFrame[class="Card"][theme="dark"] {
+    background-color: #1e293b;
+    border: 1px solid #475569;
+    color: #ffffff;
+}
+
+QGroupBox[class="Card"]::title {
+    subcontrol-origin: margin;
+    subcontrol-position: top left;
+    padding: 0 10px; 
+    left: 10px;
+    top: 5px;
+}
+
+/* --- ACTIVITY CARDS (Tarjetas de Metas Individuales) --- */
+/* Tarjetas individuales de actividades en el módulo de metas */
+QFrame[class="ActivityItem"] {
+    background-color: #ffffff;  /* Blanco puro para contrastar con fondo #f8fafc */
+    border: 1px solid #e2e8f0;  /* Borde sutil slate-200 */
+    border-radius: 12px;
+    padding: 15px;
+    min-height: 200px;
+}
+
+/* Modo oscuro para tarjetas de actividades - SELECTOR CORREGIDO */
+QMainWindow[theme="dark"] QFrame[class="ActivityItem"] {
+    background-color: #1f1f1f;  /* Neutral Dark Gray */
+    border: 1px solid #334155;  /* Borde slate-700 */
+    color: #f1f5f9;
+}
+
+/* Efecto hover para las tarjetas de actividades (modo claro) */
+QFrame[class="ActivityItem"]:hover {
+    border-color: #cbd5e1;  /* Borde más visible en hover */
+    background-color: #fefeff;  /* Ligeramente más brillante */
+}
+
+/* Efecto hover para las tarjetas de actividades (modo oscuro) - SELECTOR CORREGIDO */
+QMainWindow[theme="dark"] QFrame[class="ActivityItem"]:hover {
+    border-color: #475569;  /* Borde más visible en hover */
+    background-color: #334155;  /* Un tono más claro en hover */
+}
+
+/* Títulos dentro de las tarjetas de actividades (modo claro) */
+QFrame[class="ActivityItem"] QLabel[class="h2"] {
+    color: #0ea5e9;  /* Azul cian para títulos de tarjetas */
+    font-weight: 700;
+}
+
+/* Títulos dentro de las tarjetas de actividades (modo oscuro) - SELECTOR CORREGIDO */
+QMainWindow[theme="dark"] QFrame[class="ActivityItem"] QLabel[class="h2"] {
+    color: #0ea5e9;  /* Mismo azul cian en modo oscuro */
+    font-weight: 700;
+}
+
+
+/* --- HEADER METAS (Encabezado Principal) --- */
+
+/* ID Symbol (#) - Estilo sofisticado */
+QLabel[class="IdSymbol"] {
+    color: #94a3b8;  /* Slate-400 */
+    font-size: 32px;
+    font-weight: 300;
+    letter-spacing: -1px;
+}
+QLabel[class="IdSymbol"][theme="dark"] {
+    color: #64748b;  /* Slate-500 */
+}
+
+/* ID Value (Número) - Grande y ligero */
+QLabel[class="IdValue"] {
+    color: #334155;  /* Slate-700 */
+    font-size: 56px;
+    font-weight: 300;
+    letter-spacing: -2px;
+    line-height: 1;
+}
+QLabel[class="IdValue"][theme="dark"] {
+    color: #e2e8f0;  /* Slate-200 */
+}
+
+/* Divisor Vertical - Sutil pero visible */
+QFrame[class="Divider"] {
+    background-color: #cbd5e1;  /* Slate-300 */
+    border: none;
+}
+QFrame[class="Divider"][theme="dark"] {
+    background-color: #475569;  /* Slate-600 */
+}
+
+/* Título H1 (Nombre Infoplaza) - Display elegant */
+QLabel[class="h1"] {
+    color: #0f172a;  /* Slate-900 */
+    font-size: 40px;
+    font-weight: 700;
+    letter-spacing: -1px;
+    line-height: 1.1;
+}
+QLabel[class="h1"][theme="dark"] {
+    color: #f8fafc;  /* Slate-50 */
+}
+
+/* Subtítulo (Regional/Provincia) - Uppercase tracking */
+QLabel[class="subtitle"] {
+    color: #64748b;  /* Slate-500 */
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+}
+QLabel[class="subtitle"][theme="dark"] {
+    color: #94a3b8;  /* Slate-400 */
+}
+
+/* Timeline Items (Período, Mes Actual, etc.) */
+QFrame[class="TimelineItem"] {
+    background-color: #f1f5f9;  /* Slate-100 */
+    border: 1px solid #e2e8f0;  /* Slate-200 */
+    border-radius: 8px;
+    padding: 4px 16px;  /* Padding más compacto verticalmente */
+}
+QFrame[class="TimelineItem"][theme="dark"] {
+    background-color: #1e293b;  /* Slate-800 */
+    border: 1px solid #334155;  /* Slate-700 */
+}
+
+/* Labels dentro de Timeline Items se heredan de subtitle */
+/* Values dentro de Timeline Items */
+QFrame[class="TimelineItem"] QLabel[class="body"] {
+    color: #0f172a;  /* Slate-900 */
+    font-size: 15px;
+    font-weight: 600;
+}
+QFrame[class="TimelineItem"][theme="dark"] QLabel[class="body"] {
+    color: #f1f5f9;  /* Slate-100 */
+}
+
+
+/* --- CONNECTION STATUS --- */
+#ConnectionStatus {
+    font-weight: 700;
+    color: #059669;
+}
+QMainWindow[theme="dark"] #ConnectionStatus {
+    color: #34d399;
+}
+#ConnectionStatus[status="disconnected"] {
+    color: #ef4444;
+}
+
+/* --- SEPARADORES (QFrame HLine) --- */
+QFrame[frameShape="4"] { /* HLine */
+    background-color: #e2e8f0;
+    border: none;
+    max-height: 1px;
+    margin: 5px 0;
+}
+QMainWindow[theme="dark"] QFrame[frameShape="4"] {
+    background-color: #334155;
+}
+
+/* --- TABS (Elegant Modern Style) --- */
+QTabWidget::pane {
+    border: 1px solid #e2e8f0;
+    background: #ffffff;
+    border-radius: 12px;
+    top: -1px;
+}
+QMainWindow[theme="dark"] QTabWidget::pane {
+    border: 1px solid #334155;
+    background: #1e293b;
+}
+
+QTabBar::tab {
+    background: #f1f5f9;
+    color: #64748b;
+    border: 1px solid #cbd5e1;
+    border-bottom: none;
+    padding: 5px 5px;   /* Reduced padding */
+    margin-right: 4px;
+    border-top-left-radius: 12px; 
+    border-top-right-radius: 12px;
+    font-weight: 600;
+    font-size: 14px;
+    min-width: 100px;
+    text-align: center;
+}
+QMainWindow[theme="dark"] QTabBar::tab {
+    background: #0f172a;
+    color: #94a3b8;
+    border: 1px solid #334155;
+    border-bottom: none;
+    padding: 5px 5px;   /* Mismo padding que modo claro */
+    margin-right: 4px;
+    border-top-left-radius: 12px; 
+    border-top-right-radius: 12px;
+    font-weight: 600;
+    font-size: 14px;
+    min-width: 100px;
+    text-align: center;
+}
+
+/* Hover State */
+QTabBar::tab:hover {
+    background: #e2e8f0;
+    color: #334155;
+}
+QMainWindow[theme="dark"] QTabBar::tab:hover {
+    background: #1e293b;
+    color: #f1f5f9;
+}
+
+/* Selected State (The "Active" Tab) */
+QTabBar::tab:selected {
+    background: #ffffff;
+    color: #0284c7; /* Sky 600 */
+    border-top: 4px solid #0284c7; /* Thick accent line */
+    border-bottom: 2px solid #ffffff; /* Seamless spacing */
+}
+QMainWindow[theme="dark"] QTabBar::tab:selected {
+    background: #1e293b;
+    color: #38bdf8; /* Sky 400 */
+    border-top: 4px solid #38bdf8;
+    border-bottom: 2px solid #1e293b;
+}
+
+/* --- TABLES (Minimalist Modern Style) --- */
+QTableWidget {
+    background-color: #ffffff;
+    alternate-background-color: #f8f9fa; /* Fondo cebra muy sutil */
+    selection-background-color: #e6f7ff; /* Azul claro muy suave al seleccionar */
+    selection-color: #1890ff;
+    gridline-color: transparent; /* Ocultamos el grid por defecto para controlarlo con bordes */
+    border: 1px solid #f0f0f0;
+    border-radius: 4px;
+    font-family: "Segoe UI", "Roboto", sans-serif; /* Tipografía limpia sin serifas */
+    font-size: 15px; /* Aumentado a 15px */
+    outline: 0;
+}
+
+/* Encabezados: Fondo gris claro, texto negrita, sin bordes verticales */
+QHeaderView::section {
+    background-color: #fafafa; /* Gris muy claro pedido */
+    color: #262626;
+    padding: 12px 8px;
+    border: none;
+    border-bottom: 2px solid #f0f0f0; /* Solo línea horizontal inferior */
+    font-weight: bold; /* Texto en negrita */
+    font-size: 13px; /* Encabezados a 13px */
+    text-align: left;
+}
+
+/* Celdas: Solo líneas horizontales finas */
+QTableWidget::item {
+    padding: 12px; /* Pad aumentado a 12px */
+    border-bottom: 1px solid #f0f0f0; /* La línea divisoria horizontal fina */
+    color: #595959;
+}
+
+/* Eliminar resaltado de enfoque en celdas */
+QTableWidget::item:focus {
+    background-color: #e6f7ff;
+}
+
+/* --- FILA DE TOTALES --- 
+   Para usar esto en Python, debes asignar la propiedad 'total' a los items de la última fila:
+   item.setData(Qt.UserRole, "total") o usar un selector por nombre de objeto.
+*/
+QTableWidget::item[isTotal="true"] {
+    background-color: #fafafa;
+    color: #000000;
+    font-weight: bold;
+    border-top: 2px solid #d9d9d9; /* Línea superior más fuerte para separar totales */
+}
+
+/* --- MODO OSCURO (Dark Mode) --- */
+QMainWindow[theme="dark"] QTableWidget {
+    background-color: #1e293b; /* Azul Slate (mismo que gráficas) */
+    alternate-background-color: #1f1f1f;
+    gridline-color: transparent;
+    border: 1px solid #303030;
+    selection-background-color: #111a2c;
+    selection-color: #177ddc;
+}
+
+/* Selector Directo (redundancia para mayor compatibilidad) */
+QTableWidget[theme="dark"] {
+    background-color: #1e293b; /* Azul Slate (mismo que gráficas) */
+    alternate-background-color: #1f1f1f;
+    gridline-color: transparent;
+    border: 1px solid #303030;
+    selection-background-color: #111a2c;
+    selection-color: #177ddc;
+}
+
+QMainWindow[theme="dark"] QHeaderView::section {
+    background-color: #1f1f1f;
+    color: #d9d9d9;
+    border-bottom: 2px solid #303030;
+}
+
+QTableWidget[theme="dark"] QHeaderView::section {
+    background-color: #1f1f1f;
+    color: #d9d9d9;
+    border-bottom: 2px solid #303030;
+}
+
+QMainWindow[theme="dark"] QTableWidget::item {
+    border-bottom: 1px solid #303030;
+    color: #8c8c8c;
+}
+
+QTableWidget[theme="dark"]::item {
+    border-bottom: 1px solid #303030;
+    color: #8c8c8c;
+}
+
+QMainWindow[theme="dark"] QTableWidget::item[isTotal="true"] {
+    background-color: #1f1f1f;
+    color: #ffffff;
+    border-top: 2px solid #434343;
+}
+
+/* --- INPUTS & CHECKBOXES --- */
+QLineEdit {
+    background-color: #ffffff;
+    border: 1px solid #cbd5e0;
+    border-radius: 6px;
+    padding: 6px 10px;
+    color: #334155;
+    font-size: 13px;
+}
+QLineEdit:focus {
+    border: 1px solid #0284c7;
+}
+QMainWindow[theme="dark"] QLineEdit {
+    background-color: #1e293b;
+    border: 1px solid #475569;
+    color: #f1f5f9;
+}
+QMainWindow[theme="dark"] QLineEdit:focus {
+    border: 1px solid #38bdf8;
+    background-color: #0f172a;
+}
+
+QCheckBox {
+    spacing: 8px;
+    color: #334155;
+}
+QMainWindow[theme="dark"] QCheckBox {
+    color: #e2e8f0;
+    spacing: 8px;
+}
+QMainWindow[theme="dark"] QCheckBox::indicator {
+    width: 20px; height: 20px;
+    border: 1px solid #475569;
+    border-radius: 6px; /* Modern square-round */
+    background: #0f172a;
+}
+QMainWindow[theme="dark"] QCheckBox::indicator:checked {
+    background-color: #38bdf8;
+    border-color: #38bdf8;
+    image: url(:/icons/check.png); 
+}
+
+/* Highlight SpinBox */
+#HighlightSpinBox {
+    font-size: 14px;
+    font-weight: bold;
+    padding: 8px; /* Taller input */
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    min-width: 80px;
+}
+QMainWindow[theme="dark"] #HighlightSpinBox {
+    background-color: #0f172a;
+    color: #f1f5f9;
+    border: 1px solid #475569;
+}
+
+/* Badges Dark Mode Fix */
+QMainWindow[theme="dark"] #MetaBadge {
+    background-color: rgba(220, 38, 38, 0.15); /* Red tint */
+    border: 1px solid #991b1b;
+    color: #fca5a5;
+}
+QMainWindow[theme="dark"] #UserBadge {
+    background-color: rgba(234, 88, 12, 0.15); /* Orange tint */
+    border: 1px solid #9a3412;
+    color: #fdba74;
+}
+
+/* --- BUTTONS --- */
+QPushButton {
+    border-radius: 8px;
+    padding: 10px 20px;
+    font-weight: 700;
+    font-size: 13px;
+    text-transform: uppercase; /* Cleaner look */
+}
+
+/* Action Buttons (Execute/Export) */
+#ExecuteBtn {
+    background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #10b981, stop:1 #059669);
+    color: white; border: none;
+    font-size: 14px; font-weight: 800; padding: 15px;
+    letter-spacing: 0.5px;
+}
+#ExecuteBtn:hover { background: #059669; }
+
+#ExportBtn {
+    background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #3b82f6, stop:1 #2563eb);
+    color: white; border: none;
+    font-size: 14px; font-weight: 800; padding: 15px;
+    letter-spacing: 0.5px;
+}
+#ExportBtn:hover { background: #2563eb; }
+
+#ExportPdfBtn {
+    background: qlineargradient(x1:0, y1:0, x2:1, y2:1, stop:0 #ef4444, stop:1 #dc2626);
+    color: white; border: none;
+    font-size: 14px; font-weight: 800; padding: 15px;
+    letter-spacing: 0.5px;
+}
+#ExportPdfBtn:hover { background: #dc2626; }
+
+/* Ghost Buttons (Filters) */
+QPushButton[class="ghost"] {
+    background-color: transparent;
+    border: 1px solid #cbd5e1;
+    color: #64748b;
+    text-transform: none; /* Keep filters mixed case for readability */
+}
+QPushButton[class="ghost"]:hover {
+    background-color: #f1f5f9;
+    color: #334155;
+    border-color: #94a3b8;
+}
+QPushButton[class="ghost"]:checked {
+    background-color: #e2e8f0;
+    color: #0f172a;
+    border-color: #64748b;
+}
+
+/* Ghost Buttons Dark */
+QMainWindow[theme="dark"] QPushButton[class="ghost"] {
+    border-color: #475569;
+    color: #cbd5e1; /* Texto más claro para legibilidad */
+}
+QMainWindow[theme="dark"] QPushButton[class="ghost"]:hover {
+    background-color: #334155;
+    color: #ffffff;
+}
+QMainWindow[theme="dark"] QPushButton[class="ghost"]:checked {
+    background-color: #1e293b;
+    color: #38bdf8;
+    border-color: #38bdf8;
+}
+
+/* --- SIDEBAR (Static Dark Premium) --- */
+#Sidebar { 
+    background-color: #0f172a; /* Slate 900 (Darker) */
+    border-right: 1px solid #1e293b;
+    min-width: 250px;
+}
+
+/* Sidebar Title & Subtitle */
+#SidebarTitle { 
+    color: #38bdf8; /* Sky 400 */
+    font-size: 42px; /* Enormous and premium */
+    font-weight: 900; 
+    letter-spacing: 2px;
+    margin-bottom: -5px; /* Even closer to subtitle */
+    padding: 0;
+}
+
+#SidebarSubtitle {
+    color: #ffffff;
+    font-size: 11px;
+    font-weight: 400;
+    margin-bottom: 20px;
+}
+
+/* Sidebar Menu Buttons */
+QPushButton#SidebarButton { 
+    background-color: transparent; 
+    color: #94a3b8; /* Slate 400 */
+    text-align: left; 
+    padding: 15px 25px; 
+    border: none; 
+    border-left: 3px solid transparent; 
+    font-size: 14px;
+    font-weight: 600;
+}
+QPushButton#SidebarButton:hover { 
+    background-color: rgba(255,255,255,0.03); 
+    color: #e2e8f0; 
+}
+QPushButton#SidebarButton:checked, QPushButton#SidebarButton[active="true"] { 
+    background-color: rgba(56, 189, 248, 0.1); /* Sky 400 with opacity */
+    color: #38bdf8; 
+    border-left: 3px solid #38bdf8; 
+}
+
+/* Sidebar ComboBox (Regional Selector) - IMPROVED */
+#WarriorCombo {
+    background-color: #0f172a;
+    border: 1px solid #475569;
+    color: #f1f5f9;
+    padding: 5px 10px;
+    border-radius: 6px;
+    font-size: 13px;
+    min-height: 25px;
+}
+#WarriorCombo::drop-down {
+    subcontrol-origin: padding;
+    subcontrol-position: top right;
+    width: 25px;
+    border-left-width: 1px;
+    border-left-color: #475569;
+    border-left-style: solid;
+    border-top-right-radius: 6px;
+    border-bottom-right-radius: 6px;
+}
+#WarriorCombo::down-arrow {
+    width: 0; 
+    height: 0; 
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+    border-top: 5px solid #cbd5e1;
+    margin-right: 2px;
+}
+#WarriorCombo QAbstractItemView {
+    background-color: #1e293b;
+    color: #f1f5f9;
+    border: 1px solid #475569;
+    selection-background-color: #38bdf8;
+    selection-color: #0f172a;
+}
+
+/* Sidebar Separator */
+#Sidebar QLabel {
+    /* Reset default qlabel in sidebar if needed, but we focus on specific IDs below */
+    background: transparent;
+}
+
+/* Section Headers (Menu Principal, Soporte, Etc) */
+#SectionLabel, #WarriorBadge {
+    color: #e2e8f0; /* Bright Slate/White */
+    font-weight: 800; /* Extra Bold */
+    font-size: 13px; /* Larger */
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    margin-top: 20px;
+    margin-bottom: 10px;
+    padding-left: 25px;
+}
+
+/* Specific styling for the Warrior Icon to match */
+#WarriorSection QLabel {
+   color: #e2e8f0;
+}
+
+/* Sidebar Action Button (Cambiar Regional) */
+#ChangeRootBtn {
+    background-color: rgba(30, 41, 59, 0.5);
+    border: 1px dashed #475569;
+    color: #94a3b8;
+    border-radius: 6px;
+    text-align: center;
+    font-weight: 600;
+    margin: 0 10px;
+}
+#ChangeRootBtn:hover {
+    background-color: rgba(56, 189, 248, 0.1);
+    border-color: #38bdf8;
+    border-style: solid;
+    color: #38bdf8;
+}
+
+/* Support Links */
+QPushButton#SupportLink {
+    background-color: transparent;
+    color: #94a3b8;
+    text-align: left;
+    padding: 8px 25px;
+    border: none;
+    font-size: 13px;
+    font-weight: 500;
+}
+QPushButton#SupportLink:hover {
+    color: #f1f5f9;
+    background-color: rgba(255,255,255,0.03);
+}
+
+/* Theme Toggle Button (Unique "Cyber" Look) */
+#ThemeToggleBtn { 
+    background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #0f172a, stop:1 #1e293b);
+    border: 1px solid #334155;
+    border-bottom: 3px solid #38bdf8; /* Cyan Underline Accent */
+    color: #38bdf8;
+    border-radius: 4px; 
+    margin: 25px 20px;
+    padding: 18px 0; /* Significantly taller */
+    font-weight: 800; /* Extra bold */
+    font-size: 16px; /* Larger text */
+    letter-spacing: 1.5px;
+}
+#ThemeToggleBtn:hover {
+    background: #1e293b;
+    color: #ffffff;
+    border-color: #38bdf8;
+    border-bottom: 3px solid #7dd3fc;
+}
+
+/* ==========================================================================
+   DARK THEME OVERRIDES ([theme="dark"])
+   ========================================================================== */
+
+/* Main Background */
+[theme="dark"] QMainWindow, [theme="dark"] QDialog, [theme="dark"] #ContentContainer {
+    background-color: #0f172a; /* Slate 900 */
+    color: #f1f5f9; /* Slate 100 */
+}
+
+/* MESSAGE BOX FIXES */
+[theme="dark"] QMessageBox {
+    background-color: #0f172a;
+    color: #f1f5f9;
+}
+[theme="dark"] QMessageBox QLabel {
+    color: #f1f5f9; /* Force white text */
+    font-size: 13px;
+}
+[theme="dark"] QMessageBox QPushButton {
+    background-color: #1e293b;
+    border: 1px solid #334155;
+    color: #38bdf8;
+    min-width: 80px;
+}
+[theme="dark"] QMessageBox QPushButton:hover {
+    background-color: #334155;
+    color: #ffffff;
+}
+
+/* Typography Dark (Brighter/High Contrast) */
+QMainWindow[theme="dark"] QLabel[class="h1"] { color: #ffffff; }
+QMainWindow[theme="dark"] QLabel[class="h2"] { color: #f1f5f9; font-weight: 800; } /* Texto claro para mejor legibilidad */
+QMainWindow[theme="dark"] QLabel[class="h3"] { color: #38bdf8; font-weight: 800; } /* Azul sky para destacar */
+QMainWindow[theme="dark"] QLabel[class="body"] { color: #f1f5f9; }
+QMainWindow[theme="dark"] QLabel[class="body-large"] { color: #f1f5f9; }
+QMainWindow[theme="dark"] QLabel[class="subtitle"] { color: #cbd5e1; }
+
+/* Selectores Directos para Widgets con theme='dark' (FORZADO) */
+QLabel[theme="dark"] {
+    color: #f1f5f9 !important;
+}
+QPushButton[theme="dark"] {
+    color: #cbd5e1 !important;
+}
+QCheckBox[theme="dark"] {
+    color: #e2e8f0 !important;
+}
+
+/* Cards Dark */
+[theme="dark"] .Card, [theme="dark"] QGroupBox[class="Card"], [theme="dark"] QFrame[class="Card"] {
+    background-color: #1e293b; /* Slate 800 */
+    border: 1px solid #334155; /* Slate 700 */
+}
+
+/* Tables Dark (The "Cuadro de Metas" Look) */
+[theme="dark"] QTableWidget {
+    background-color: #1e293b;
+    border: 1px solid #334155;
+    gridline-color: #334155;
+    color: #e2e8f0; /* Slate 200 */
+    selection-background-color: #0f172a; /* Slate 900 */
+    selection-color: #38bdf8; /* Sky 400 */
+}
+[theme="dark"] QHeaderView::section {
+    background-color: #0f172a; /* Slate 900 */
+    color: #94a3b8; /* Slate 400 */
+    border-bottom: 2px solid #334155;
+}
+
+/* Badges Dark */
+[theme="dark"] #MetaBadge {
+    background-color: rgba(239, 68, 68, 0.1); border-color: #ef4444; color: #fca5a5;
+}
+[theme="dark"] #UserBadge {
+    background-color: rgba(249, 115, 22, 0.1); border-color: #f97316; color: #fdba74;
+}
+
+/* Inputs Dark */
+[theme="dark"] QLineEdit, [theme="dark"] QSpinBox, [theme="dark"] QComboBox, [theme="dark"] QTextEdit {
+    background-color: #0f172a;
+    border: 1px solid #334155;
+    color: #f1f5f9;
+    border-radius: 6px;
+    padding: 6px;
+}
+[theme="dark"] QLineEdit:focus, [theme="dark"] QSpinBox:focus, [theme="dark"] QTextEdit:focus {
+    border-color: #38bdf8;
+    background-color: #1e293b;
+}
+
+/* Ghost Buttons Dark */
+[theme="dark"] QPushButton[class="ghost"] {
+    border-color: #475569;
+    color: #94a3b8;
+}
+[theme="dark"] QPushButton[class="ghost"]:hover {
+    background-color: #334155;
+    color: #f1f5f9;
+}
+[theme="dark"] QPushButton[class="ghost"]:checked {
+    background-color: #1e293b;
+    color: #38bdf8;
+    border-color: #38bdf8;
+}
+
+/* Tabs Dark */
+[theme="dark"] QTabWidget::pane { border: 1px solid #334155; background: #1e293b; }
+[theme="dark"] QTabBar::tab { background: #0f172a; border: 1px solid #334155; color: #64748b; padding: 8px 16px; margin-right: 2px; }
+[theme="dark"] QTabBar::tab:selected { background: #1e293b; border-bottom: 2px solid #1e293b; color: #38bdf8; font-weight: 700; }
+
+/* Scrollbars Dark */
+[theme="dark"] QScrollBar:vertical { background: transparent; width: 10px; margin: 0; }
+[theme="dark"] QScrollBar::handle:vertical { background: #475569; border-radius: 5px; min-height: 20px; }
+[theme="dark"] QScrollBar::add-line:vertical, [theme="dark"] QScrollBar::sub-line:vertical { height: 0; }
+
+/* Status Buttons (Dynamic) */
+QPushButton[status="success"] {
+    background-color: #22c55e;
+    color: white; border: none; font-weight: 700;
+}
+QPushButton[status="warning"] {
+    background-color: #f59e0b;
+    color: #1e293b; border: none; font-weight: 700;
+}
+
+/* --- METAS MODULE SPECIFIC --- */
+/* --- METAS MODULE SPECIFIC --- */
+.Header {
+    background-color: #ffffff;
+    border-radius: 8px;
+    border: none;
+    margin-bottom: 0px;
+    padding: 15px; /* Added Padding */
+}
+QMainWindow[theme="dark"] .Header {
+    background-color: #1e293b;
+    border: 1px solid #334155;
+    padding: 15px; /* Ensure padding in dark mode too */
+}
+
+/* Force header text to white in dark mode */
+QMainWindow[theme="dark"] .Header QLabel {
+    color: #ffffff;
+}
+/* Subtext in header (e.g. "PERIODO") */
+QMainWindow[theme="dark"] .Header QLabel[class="subtitle"] {
+    color: #94a3b8; /* Lighter grey for subtitles */
+}
+
+.TimelineItem {
+    background-color: #f8fafc;
+    border-radius: 8px;
+    border: none;
+    padding: 2px 5px; /* Added padding per user request */
+    margin-right: 5px;
+}
+QMainWindow[theme="dark"] .TimelineItem {
+    background-color: #0f172a; /* Slate 900 */
+    border: 1px solid #334155;
+}
+/* TimelineItem Labels in Dark Mode */
+QMainWindow[theme="dark"] .TimelineItem QLabel {
+    color: #e2e8f0;
+}
+QMainWindow[theme="dark"] .TimelineItem QLabel[class="subtitle"] {
+    color: #94a3b8;
+    font-size: 11px;
+    font-weight: 700;
+}
+
+/* ============================================================
+   TARJETAS DE METAS - ActivityItem
+   ============================================================
+   PERSONALIZACIÓN FÁCIL:
+   - Background color: Color de fondo de la tarjeta
+   - Border: Color y grosor del borde
+   - Border-radius: Curvatura de esquinas (8px = suave)
+   - Padding: Espacio interno (16px = balanceado)
+   - Min-height: Altura mínima de la tarjeta
+
+   ============================================================ */
+
+/* MODO CLARO - Tonos suaves y agradables */
+QFrame[class="ActivityItem"] {
+    /* 🎨 COLOR DE FONDO - Cambia aquí para ajustar el fondo en modo claro */
+    background-color: #fafbfc;  /* Gris muy claro, casi blanco pero no puro */
+    
+    /* 🎨 COLOR DE BORDE - Cambia aquí para ajustar el borde en modo claro */
+    border: 1px solid #e1e8ed;
+    
+    border-radius: 8px;
+    padding: 16px;
+    
+    /* 📏 ALTURA MÍNIMA - Cambia aquí para ajustar la altura de las tarjetas */
+    min-height: 180px;
+    
+    margin: 5px;
+}
+
+/* MODO OSCURO - Tonos oscuros pero no negros puros */
+QMainWindow[theme="dark"] QFrame[class="ActivityItem"] {
+    /* 🎨 COLOR DE FONDO OSCURO - Cambia aquí para ajustar el fondo en modo oscuro */
+    background-color: #585b62ff;  /* Azul oscuro suave, no negro puro */
+    
+    /* 🎨 COLOR DE BORDE OSCURO - Cambia aquí para ajustar el borde en modo oscuro */
+    border: 1px solid #2d3748;
+}
+
+QMainWindow[theme="dark"] QFrame[class="ActivityItem"] QLabel {
+    color: #f1f5f9;
+}
+QMainWindow[theme="dark"] QFrame[class="ActivityItem"] QLabel[class="subtitle"] {
+    color: #94a3b8;
+}
+
+/* ========================================
+   LABEL CLASSES FOR ACTIVITY CARDS
+   ======================================== */
+
+/* ============================================================
+   TÍTULO DE LA TARJETA (h2)
+   ============================================================
+   Ejemplo: "📋 PLATAFORMAS VIRTUALES - USUARIOS"
+   
+   PERSONALIZACIÓN FÁCIL:
+   - Font-size: Tamaño del texto del título
+   - Font-weight: Grosor del texto (700 = negrita)
+   - Color: Color del texto del título
+   ============================================================ */
+
+/* MODO CLARO */
+QFrame[class="ActivityItem"] QLabel[class="h2"] {
+    /* 📏 TAMAÑO DEL TÍTULO - Cambia aquí para ajustar el tamaño */
+    font-size: 14px;
+    
+    /* 📏 GROSOR DEL TÍTULO - Cambia aquí (400=normal, 600=semi-bold, 700=bold) */
+    font-weight: 700;
+    
+    /* 🎨 COLOR DEL TÍTULO MODO CLARO - Cambia aquí */
+    color: #2563eb;  /* Azul profesional suave */
+    
+    letter-spacing: 0.4px;
+    padding: 0;
+    margin-bottom: 6px;
+    text-transform: uppercase;
+}
+
+/* MODO OSCURO */
+QMainWindow[theme="dark"] QFrame[class="ActivityItem"] QLabel[class="h2"] {
+    /* 🎨 COLOR DEL TÍTULO MODO OSCURO - Cambia aquí */
+    color: #60a5fa;  /* Azul brillante pero no muy intenso */
+}
+
+/* Subtítulos internos (ej: "Publicaciones:", "Compartidas:") */
+QFrame[class="ActivityItem"] QLabel[class="subtitle"] {
+    font-size: 11px;
+    font-weight: 500;
+    opacity: 0.7;
+    margin: 2px 0;
+}
+
+/* ============================================================
+   VALOR PRINCIPAL - "REALIZADOS"
+   ============================================================
+   Ejemplo: "30/100 certificados"
+   
+   PERSONALIZACIÓN FÁCIL:
+   - Font-size: Tamaño del valor principal
+   - Font-weight: Grosor del texto
+   - Color: Color del texto
+   - Margin: Espacio alrededor del elemento
+   ============================================================ */
+
+/* MODO CLARO */
+QFrame[class="ActivityItem"] QLabel[class="MetaMainValue"] {
+    /* 📏 TAMAÑO DEL VALOR PRINCIPAL - Cambia aquí para hacerlo más grande o pequeño */
+    font-size: 20px;
+    
+    /* 📏 GROSOR - Mantener en 700 para que sea prominente */
+    font-weight: 700;
+    
+    /* 📏 MÁRGENES - Espacio arriba y abajo */
+    margin: 10px 0 4px 0;
+    
+    /* 🎨 COLOR MODO CLARO - Cambia aquí */
+    color: #1e293b;  /* Gris oscuro suave, no negro puro */
+}
+
+/* MODO OSCURO */
+QMainWindow[theme="dark"] QFrame[class="ActivityItem"] QLabel[class="MetaMainValue"] {
+    /* 🎨 COLOR MODO OSCURO - Cambia aquí */
+    color: #f1f5f9;  /* Blanco suave, no puro */
+}
+
+/* ============================================================
+   COLORES DINÁMICOS - SISTEMA SEMÁFORO
+   ============================================================
+   Estos estilos se aplican cuando se establece la propiedad "status"
+   en el widget. Ejemplo: label.setProperty("status", "success")
+   ============================================================ */
+
+/* 🟢 VERDE - Estado Excelente (al día con el ritmo) */
+QLabel[class="MetaMainValue"][status="success"] {
+    color: #28a745 !important;  /* Verde éxito */
+}
+
+QMainWindow[theme="dark"] QLabel[class="MetaMainValue"][status="success"] {
+    color: #34d399 !important;  /* Verde más brillante para modo oscuro */
+}
+
+/* 🟡 AMARILLO - Estado Bueno (ligeramente atrasado) */
+QLabel[class="MetaMainValue"][status="warning"] {
+    color: #ffc107 !important;  /* Amarillo advertencia */
+}
+
+QMainWindow[theme="dark"] QLabel[class="MetaMainValue"][status="warning"] {
+    color: #fbbf24 !important;  /* Amarillo más brillante para modo oscuro */
+}
+
+/* 🔴 ROJO - Estado Crítico (muy atrasado) */
+QLabel[class="MetaMainValue"][status="danger"] {
+    color: #ef5350 !important;  /* Rojo suave */
+}
+
+QMainWindow[theme="dark"] QLabel[class="MetaMainValue"][status="danger"] {
+    color: #f87171 !important;  /* Rojo más brillante para modo oscuro */
+}
+
+/* ============================================================
+   TEXTO SECUNDARIO - "GANADOS"
+   ============================================================
+   Ejemplo: "3.0% de 10% ganados"
+   
+   PERSONALIZACIÓN FÁCIL:
+   - Font-size: Tamaño del texto secundario
+   - Font-weight: Grosor (500 = medio, 400 = normal)
+   - Color: Color del texto
+   - Opacity: Transparencia (0.75 = 75% visible)
+   ============================================================ */
+
+/* MODO CLARO */
+QFrame[class="ActivityItem"] QLabel[class="MetaSecondaryText"] {
+    /* 📏 TAMAÑO DEL TEXTO SECUNDARIO - Unificado a 14px */
+    font-size: 14px;
+    
+    /* 📏 GROSOR - Peso medio (no negrita) para mayor elegancia */
+    font-weight: 500;
+    
+    /* 🎨 OPACIDAD - 1.0 para máxima legibilidad al ser un dato clave */
+    opacity: 1.0;
+    
+    margin-top: 3px;
+    
+    /* 🎨 COLOR MODO CLARO - Gris oscuro por defecto */
+    color: #475569;
+}
+
+/* MODO OSCURO */
+QMainWindow[theme="dark"] QFrame[class="ActivityItem"] QLabel[class="MetaSecondaryText"] {
+    /* 🎨 COLOR MODO OSCURO */
+    color: #cbd5e1;
+}
+
+/* --- COLORES DINÁMICOS PARA TEXTO SECUNDARIO --- */
+QLabel[class="MetaSecondaryText"][status="success"] {
+    color: #28a745 !important;
+}
+QMainWindow[theme="dark"] QLabel[class="MetaSecondaryText"][status="success"] {
+    color: #34d399 !important;
+}
+
+QLabel[class="MetaSecondaryText"][status="warning"] {
+    color: #ffc107 !important;
+}
+QMainWindow[theme="dark"] QLabel[class="MetaSecondaryText"][status="warning"] {
+    color: #fbbf24 !important;
+}
+
+QLabel[class="MetaSecondaryText"][status="danger"] {
+    color: #ef5350 !important;
+}
+QMainWindow[theme="dark"] QLabel[class="MetaSecondaryText"][status="danger"] {
+    color: #f87171 !important;
+}
+
+/* Barras de progreso específicas para tarjetas - Más limpias */
+QFrame[class="ActivityItem"] QProgressBar {
+    border: none;
+    border-radius: 3px;
+    background-color: rgba(100, 116, 139, 0.15);
+    height: 12px;
+    text-align: center;
+    margin: 6px 0;
+}
+QMainWindow[theme="dark"] QFrame[class="ActivityItem"] QProgressBar {
+    background-color: rgba(100, 116, 139, 0.25);
+}
+
+/* Chunk de la barra - sin cambios, color dinámico desde código */
+QFrame[class="ActivityItem"] QProgressBar::chunk {
+    border-radius: 3px;
+}
+
+/* Fix: Set proper dark background for ScrollAreas without affecting cards */
+QMainWindow[theme="dark"] QScrollArea {
+    background-color: transparent;
+    border: none;
+}
+/* Target the viewport (the actual scrollable area) */
+QMainWindow[theme="dark"] QScrollArea > QWidget {
+    background-color: #0f172a; /* Main dark background */
+}
+
+/* Progress Bar Customization */
+QProgressBar {
+    border: 1px solid #cbd5e0;
+    border-radius: 4px;
+    text-align: center;
+    background-color: #e2e8f0;
+    color: #4a5568;
+    font-weight: bold;
+    font-size: 10px;
+}
+QMainWindow[theme="dark"] QProgressBar {
+    background-color: #0f172a;
+    border-color: #4a5568;
+    color: #e2e8f0;
+}
+QProgressBar::chunk {
+    background-color: #3182ce;
+    border-radius: 3px;
+}
+
+/* ============================================================
+   EFECTO HOVER - Al pasar el mouse
+   ============================================================
+   PERSONALIZACIÓN FÁCIL:
+   - Border color: Color del borde al hacer hover
+   - Background-color: Color de fondo al hacer hover
+
+   ============================================================ */
+
+/* MODO CLARO - Hover */
+QFrame[class="ActivityItem"]:hover {
+    /* 🎨 COLOR DE BORDE AL HACER HOVER - Cambia aquí */
+    border: 1px solid #38bdf8; /* Azul sky brillante */
+    
+    /* 🎨 FONDO AL HACER HOVER - Cambia aquí */
+    background-color: #f8fafc;
+}
+
+/* MODO OSCURO - Hover */
+QMainWindow[theme="dark"] QFrame[class="ActivityItem"]:hover {
+    /* 🎨 COLOR DE BORDE AL HACER HOVER OSCURO - Cambia aquí */
+    border: 1px solid #38bdf8;
+    
+    /* 🎨 FONDO AL HACER HOVER OSCURO - Cambia aquí */
+    background-color: #1e2938;
+}
+
+/* ============================================================
+   CHECKBOXES (Estilo Consistente en Ambos Modos)
+   ============================================================ */
+QCheckBox {
+    spacing: 8px;
+    color: #0f172a;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+QCheckBox::indicator {
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
+    border: 2px solid #cbd5e1;
+    background-color: #ffffff;
+}
+
+QCheckBox::indicator:hover {
+    border-color: #94a3b8;
+}
+
+QCheckBox::indicator:checked {
+    background-color: #0ea5e9; /* Sky 500 */
+    border-color: #0ea5e9;
+    image: url(none); /* Removemos el checkmark por defecto */
+}
+
+QCheckBox::indicator:checked:hover {
+    background-color: #0284c7; /* Sky 600 */
+    border-color: #0284c7;
+}
+
+/* Modo Oscuro */
+QMainWindow[theme="dark"] QCheckBox {
+    color: #e2e8f0;
+}
+
+QMainWindow[theme="dark"] QCheckBox::indicator {
+    border-color: #475569;
+    background-color: #1e293b;
+}
+
+QMainWindow[theme="dark"] QCheckBox::indicator:hover {
+    border-color: #64748b;
+}
+
+QMainWindow[theme="dark"] QCheckBox::indicator:checked {
+    background-color: #0ea5e9;
+    border-color: #0ea5e9;
+}
+
+QMainWindow[theme="dark"] QCheckBox::indicator:checked:hover {
+    background-color: #38bdf8; /* Sky 400 */
+    border-color: #38bdf8;
+}
+
+
+/* ============================================================
+   ESTILO BASE Y MODO CLARO (Dimensiones y Fuentes)
+   ============================================================ */
+QComboBox {
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    padding: 8px 12px;
+    background-color: #ffffff;
+    color: #0f172a;
+    font-size: 14px;
+    font-weight: 600;
+    min-height: 30px;
+}
+
+QComboBox:hover {
+    border-color: #94a3b8;
+}
+
+QComboBox:focus {
+    border-color: #38bdf8;
+}
+
+/* El botón de la derecha donde va la flecha */
+QComboBox::drop-down {
+    subcontrol-origin: padding;
+    subcontrol-position: top right;
+    width: 30px;
+    border-left: 1px solid #cbd5e1;
+}
+
+/* Contenedor de la lista (Desplegable) */
+QComboBox QAbstractItemView {
+    border: 1px solid #cbd5e1;
+    background-color: #ffffff;
+    selection-background-color: #e0f2fe;
+    selection-color: #0f172a;
+    outline: none;
+}
+
+/* Cada mes en la lista */
+QComboBox QAbstractItemView::item {
+    min-height: 35px;
+    padding-left: 10px;
+    color: #0f172a;
+}
+
+/* ============================================================
+   MODO OSCURO (Aplicado cuando theme="dark")
+   ============================================================ */
+QMainWindow[theme="dark"] QComboBox {
+    border-color: #475569;
+    background-color: #1e293b;
+    color: #f1f5f9;
+}
+
+QMainWindow[theme="dark"] QComboBox:hover {
+    border-color: #64748b;
+}
+
+QMainWindow[theme="dark"] QComboBox::drop-down {
+    border-left: 1px solid #475569;
+}
+
+/* ESTO CORRIGE EL TEXTO NEGRO DE LOS MESES */
+QMainWindow[theme="dark"] QComboBox QAbstractItemView {
+    background-color: #1e293b;
+    border: 1px solid #475569;
+    color: #f1f5f9; /* Color de los meses */
+}
+
+QMainWindow[theme="dark"] QComboBox QAbstractItemView::item {
+    color: #f1f5f9;
+}
+
+QMainWindow[theme="dark"] QComboBox QAbstractItemView::item:selected {
+    background-color: #334155;
+    color: #ffffff;
+}
+
+/* ============================================================
+   EXTRA: ESTILO DE LA BARRA DE DESPLAZAMIENTO (SCROLLBAR)
+   ============================================================ */
+QComboBox QAbstractItemView QScrollBar:vertical {
+    background: #1e293b;
+    width: 12px;
+    margin: 0px;
+}
+
+QComboBox QAbstractItemView QScrollBar::handle:vertical {
+    background: #475569;
+    min-height: 20px;
+    border-radius: 4px;
+    margin: 2px;
+}
+
+QComboBox QAbstractItemView QScrollBar::handle:vertical:hover {
+    background: #64748b;
+}
+
+QComboBox QAbstractItemView QScrollBar::add-line:vertical, 
+QComboBox QAbstractItemView QScrollBar::sub-line:vertical {
+    height: 0px; /* Oculta las flechas de la barra para un look moderno */
+}
+
+/* ============================================================
+   METAS MODULE - Connection Status Widget
+   ============================================================ */
+
+/* Estado: Online Fresh */
+ConnectionStatusWidget[status="online_fresh"] {
+    background-color: rgba(40, 167, 69, 0.15);
+    border: 1px solid #28a745;
+    border-radius: 4px;
+    padding: 2px;
+}
+
+ConnectionStatusWidget[status="online_fresh"] QLabel {
+    color: #28a745;
+    background: transparent;
+}
+
+/* Estado: Online Cached */
+ConnectionStatusWidget[status="online_cached"] {
+    background-color: rgba(255, 193, 7, 0.15);
+    border: 1px solid #ffc107;
+    border-radius: 4px;
+    padding: 2px;
+}
+
+ConnectionStatusWidget[status="online_cached"] QLabel {
+    color: #ffc107;
+    background: transparent;
+}
+
+/* Estado: Offline Cached */
+ConnectionStatusWidget[status="offline_cached"] {
+    background-color: rgba(220, 53, 69, 0.15);
+    border: 1px solid #dc3545;
+    border-radius: 4px;
+    padding: 2px;
+}
+
+ConnectionStatusWidget[status="offline_cached"] QLabel {
+    color: #dc3545;
+    background: transparent;
+}
+
+/* Estado: Offline No Data */
+ConnectionStatusWidget[status="offline_no_data"] {
+    background-color: rgba(108, 117, 125, 0.15);
+    border: 1px solid #6c757d;
+    border-radius: 4px;
+    padding: 2px;
+}
+
+ConnectionStatusWidget[status="offline_no_data"] QLabel {
+    color: #6c757d;
+    background: transparent;
+}
+
+/* Estado: Error */
+ConnectionStatusWidget[status="error"] {
+    background-color: rgba(220, 53, 69, 0.20);
+    border: 1px solid #dc3545;
+    border-radius: 4px;
+    padding: 2px;
+}
+
+ConnectionStatusWidget[status="error"] QLabel {
+    color: #dc3545;
+    background: transparent;
+}
+
+/* ============================================================
+   METAS MODULE - Scroll Areas & Containers
+   ============================================================ */
+
+/* Scroll areas en módulo de metas - fondo transparente */
+QScrollArea[class="MetasScrollArea"] {
+    background: transparent;
+    border: none;
+}
+
+QScrollArea[class="MetasScrollArea"] > QWidget {
+    background: transparent;
+}
+
+QWidget[class="MetasCardContainer"] {
+    background: transparent;
+}
+
+/* ============================================================
+   METAS MODULE - Error Labels
+   ============================================================ */
+
+/* Labels de error en módulo de metas */
+QLabel[class="ErrorLabel"] {
+    color: #e74c3c;
+    font-weight: normal;
+}
+
+QMainWindow[theme="dark"] QLabel[class="ErrorLabel"] {
+    color: #ff6b6b;
+}
+
+/* ============================================================
+   METAS MODULE - Meta Containers & Progress Indicators
+   ============================================================ */
+
+/* Contenedores de avance de metas */
+QWidget[class="AvanceContainer"] {
+    background-color: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 12px;
+}
+
+QMainWindow[theme="dark"] QWidget[class="AvanceContainer"] {
+    background-color: #1e293b;
+    border: 1px solid #334155;
+}
+
+/* Labels de porcentaje grandes */
+QLabel[class="PercentageLabel"] {
+    font-size: 48px;
+    font-weight: 300;
+    color: #0f172a;
+}
+
+QMainWindow[theme="dark"] QLabel[class="PercentageLabel"] {
+    color: #f1f5f9;
+}
+
+/* Labels de avance */
+QLabel[class="AvanceLabel"] {
+    font-size: 14px;
+    font-weight: 600;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+QMainWindow[theme="dark"] QLabel[class="AvanceLabel"] {
+    color: #94a3b8;
+}
+
+/* ============================================================
+   METAS MODULE - Progress Bars
+   ============================================================ */
+
+/* Progress bars con colores dinámicos */
+QProgressBar[class="MetaProgress"] {
+    border: none;
+    border-radius: 4px;
+    background-color: #e2e8f0;
+    text-align: center;
+    color: white;
+    font-weight: bold;
+    font-size: 11px;
+}
+
+QMainWindow[theme="dark"] QProgressBar[class="MetaProgress"] {
+    background-color: #334155;
+}
+
+/* Chunk colors se aplicarán con setProperty("status", "success|warning|danger") */
+QProgressBar[class="MetaProgress"][status="success"]::chunk {
+    background-color: #10b981;
+}
+
+QProgressBar[class="MetaProgress"][status="warning"]::chunk {
+    background-color: #f59e0b;
+}
+
+QProgressBar[class="MetaProgress"][status="danger"]::chunk {
+    background-color: #ef4444;
+}
+
+/* ============================================================
+   METAS MODULE - Timeline Items
+   ============================================================ */
+
+/* Timeline containers */
+QFrame[class="MonthTimelineItem"] {
+    background-color: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    padding: 8px;
+}
+
+QMainWindow[theme="dark"] QFrame[class="MonthTimelineItem"] {
+    background-color: #1e293b;
+    border: 1px solid #334155;
+}
+
+/* Month labels en timeline */
+QFrame[class="MonthTimelineItem"] QLabel[class="MonthLabel"] {
+    font-weight: 700;
+    letter-spacing: 1px;
+    font-size: 14px;
+    border: none;
+    background: transparent;
+}
+
+/* Accent bars para meses */
+QFrame[class="AccentBar"] {
+    border: none;
+    border-radius: 1px;
+}
+
+/* Los colores se asignarán dinámicamente con setProperty */
+QFrame[class="AccentBar"][status="success"] {
+    background-color: #10b981;
+}
+
+QFrame[class="AccentBar"][status="pending"] {
+    background-color: #94a3b8;
+}
+
+QFrame[class="AccentBar"][status="active"] {
+    background-color: #0ea5e9;
+}
+
+/* ============================================================
+   METAS MODULE - Tables
+   ============================================================ */
+
+/* Tablas específicas del módulo de metas */
+QWidget[class="MetasTableView"] {
+    background-color: #f8fafc;
+    color: #334155;
+}
+
+QMainWindow[theme="dark"] QWidget[class="MetasTableView"] {
+    background-color: #0f172a;
+    color: #f1f5f9;
+}
+
+/* Botones de la tabla de metas */
+QPushButton[class="MetasRefreshButton"] {
+    background-color: #0ea5e9;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 8px 16px;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+QPushButton[class="MetasRefreshButton"]:hover {
+    background-color: #0284c7;
+}
+
+QPushButton[class="MetasRefreshButton"]:pressed {
+    background-color: #0369a1;
+}
+
+/* Labels de filtros */
+QLabel[class="FilterLabel"] {
+    font-size: 14px;
+    font-weight: bold;
+}
+
+/* Label de info en footer */
+QLabel[class="TableInfoFooter"] {
+    color: #718096;
+    font-size: 11px;
+}
+
+QMainWindow[theme="dark"] QLabel[class="TableInfoFooter"] {
+    color: #94a3b8;
+}
+
+/* ============================================================
+   CUADRO DE METAS - Tabla Maestra (MetasTableView)
+   ============================================================ */
+
+/* Contenedor principal - Modo Claro */
+QWidget[class="MetasTableView"] {
+    background-color: #f8fafc;
+    color: #334155;
+}
+
+/* Tabla - Modo Claro */
+QWidget[class="MetasTableView"] QTableWidget {
+    background-color: #ffffff;
+    alternate-background-color: #f8fafc;
+    color: #334155;
+    gridline-color: #e2e8f0;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+}
+
+/* Encabezados de tabla - Modo Claro */
+QWidget[class="MetasTableView"] QHeaderView::section {
+    background: qlineargradient(x1:0, y1:0, x2:0, y2:1, 
+                                stop:0 #f1f5f9, stop:1 #e2e8f0);
+    color: #334155;
+    border: none;
+    border-right: 1px solid #cbd5e1;
+    border-bottom: 2px solid #0284c7;
+    padding: 10px 8px;
+    font-weight: 700;
+    font-size: 12px;
+}
+
+/* Encabezados verticales (números de fila) */
+QWidget[class="MetasTableView"] QHeaderView::section:vertical {
+    font-weight: normal;
+    padding-top: 0px;
+    padding-bottom: 0px;
+}
+
+/* Hover en encabezados - Modo Claro */
+QWidget[class="MetasTableView"] QHeaderView::section:hover {
+    background: #dbeafe;
+    color: #0284c7;
+}
+
+/* ============================================================
+   MODO OSCURO - Cuadro de Metas
+   ============================================================ */
+
+/* Contenedor principal - Modo Oscuro */
+QMainWindow[theme="dark"] QWidget[class="MetasTableView"] {
+    background-color: #0f172a;
+    color: #f1f5f9;
+}
+
+/* Tabla - Modo Oscuro */
+QMainWindow[theme="dark"] QWidget[class="MetasTableView"] QTableWidget {
+    background-color: #1e293b;
+    alternate-background-color: #0f172a;
+    color: #f1f5f9;
+    gridline-color: #334155;
+    border: 1px solid #334155;
+    border-radius: 8px;
+}
+
+/* Encabezados de tabla - Modo Oscuro */
+QMainWindow[theme="dark"] QWidget[class="MetasTableView"] QHeaderView::section {
+    background: qlineargradient(x1:0, y1:0, x2:0, y2:1, 
+                                stop:0 #1e293b, stop:1 #0f172a);
+    color: #f1f5f9;
+    border: none;
+    border-right: 1px solid #334155;
+    border-bottom: 2px solid #38bdf8;
+    padding: 10px 8px;
+    font-weight: 700;
+    font-size: 12px;
+}
+
+/* Hover en encabezados - Modo Oscuro */
+QMainWindow[theme="dark"] QWidget[class="MetasTableView"] QHeaderView::section:hover {
+    background: #1e40af;
+    color: #ffffff;
+}
+
+/* ============================================================
+   BOTÓN DE REINICIO DE BASE DE DATOS (RESEDBBTION)
+   ============================================================ */
+#ResetDbIcon {
+    background: transparent;
+    border: none;
+    border-radius: 6px;
+    padding: 2px;
+    margin-left: 5px;
+}
+
+#ResetDbIcon:hover {
+    background-color: rgba(2, 132, 199, 0.1); /* Celeste suave en modo claro */
+}
+
+QMainWindow[theme="dark"] #ResetDbIcon:hover {
+    background-color: rgba(56, 189, 248, 0.15); /* Sky blue sutil en modo oscuro */
+}
