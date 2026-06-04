@@ -253,3 +253,18 @@ try {
             
         df = cls._parse_dates(data_list)
         return df, None
+
+    @classmethod
+    def extraer_useraccounts(cls, db_path, password):
+        """Extrae todos los nombres de usuario de la tabla USERACCOUNT."""
+        query = "SELECT USERNAME FROM USERACCOUNT"
+        data, error = cls._execute_bridge_query(db_path, password, query)
+        
+        if error:
+            return None, error
+        
+        if not data:
+            return [], None
+        
+        usernames = [str(row.get('USERNAME', '')).strip() for row in data if row.get('USERNAME')]
+        return usernames, None

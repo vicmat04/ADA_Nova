@@ -134,6 +134,52 @@ class SyncManager:
             return 0, f"Error general en sync_access: {e}"
 
     # =========================================================================
+    # SINCRONIZACIÓN DE CUENTAS DE USUARIO
+    # =========================================================================
+
+    def sync_useraccount_full(self) -> Tuple[int, Optional[str]]:
+        """
+        Sincroniza la tabla USERACCOUNT de Access a SQLite.
+        Estrategia: Reemplazo completo (DELETE + INSERT).
+        
+        Returns:
+            Tuple[int, str]: (Registros insertados, Mensaje error si hubo)
+        """
+        try:
+            # 1. Obtener usernames desde Access
+            usernames, error = AccessDataManager.extraer_useraccounts(
+                self.access_db_path, self.access_db_password
+            )
+            
+            if error:
+                return 0, f"Error leyendo USERACCOUNT de Access: {error}"
+            
+            if not usernames:
+                print("[SYNC USERACCOUNT] No se encontraron cuentas de usuario.")
+                return 0, None
+            
+            # 2. Reemplazo completo en SQLite
+            conn = db.get_connection()
+            try:
+                conn.execute("DELETE FROM useraccount_cache")
+                conn.executemany(
+                    "INSERT OR IGNORE INTO useraccount_cache (username) VALUES (?)",
+                    [(u,) for u in usernames]
+                )
+                conn.commit()
+                count = len(usernames)
+                print(f"[SYNC USERACCOUNT] {count} cuentas sincronizadas.")
+                return count, None
+            except Exception as e:
+                conn.rollback()
+                return 0, f"Error escribiendo useraccount_cache: {e}"
+            finally:
+                conn.close()
+        
+        except Exception as e:
+            return 0, f"Error general en sync_useraccount: {e}"
+
+    # =========================================================================
     # SINCRONIZACIÓN DE METAS (SHEETS)
     # =========================================================================
 

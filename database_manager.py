@@ -117,6 +117,13 @@ class DatabaseManager:
                 value TEXT,
                 timestamp TEXT
             );
+            """,
+            
+            # 5. Cache de Cuentas de Usuario (Desde Access)
+            """
+            CREATE TABLE IF NOT EXISTS useraccount_cache (
+                username TEXT PRIMARY KEY
+            );
             """
         ]
         

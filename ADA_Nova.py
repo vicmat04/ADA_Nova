@@ -193,6 +193,13 @@ LISTA_SERVICIOS_PRIORIZADA = [
 # La lista simple de SERVICIOS ahora se genera a partir de la estructura principal
 SERVICIOS = [item['categoria'] for item in LISTA_SERVICIOS_PRIORIZADA]
 
+# --- PATRONES PARA DETECCIÓN DE 'USO DE PC' ---
+PATRONES_USO_PC = [
+    re.compile(r'^PC\d*$', re.IGNORECASE),
+    re.compile(r'^LAPTOP\d*$', re.IGNORECASE),
+    re.compile(r'^CRON[OÓ]METRO\d*$', re.IGNORECASE),
+    re.compile(r'^HORAS?$', re.IGNORECASE),
+]
 
 
 from access_data_manager import AccessDataManager
@@ -284,6 +291,15 @@ class DataSyncThread(QThread):
         try:
             manager = SyncManager(self.db_path, self.password)
             inserted, error = manager.sync_access_incremental()
+            
+            # Sincronizar cuentas de usuario (no bloquea si falla)
+            try:
+                ua_count, ua_error = manager.sync_useraccount_full()
+                if ua_error:
+                    print(f"[WARN] Sync de useraccount falló: {ua_error}")
+            except Exception as ua_exc:
+                print(f"[WARN] Excepción en sync useraccount: {ua_exc}")
+            
             self.finished.emit(inserted, str(error) if error else None)
         except Exception as e:
             self.finished.emit(0, str(e))
@@ -1672,7 +1688,7 @@ class InfoplazaAnalyzer(QMainWindow):
             'SCAN': 'Escaneos', 'LT': 'Lev. de Texto', 'TEL': 'Trám. Línea',
             'CORREO': 'Email', 'VENTA': 'Ventas', 'TALLER': 'Talleres',
             'CONSULTA': 'Consultas', 'REUNIÓN': 'Reuniones', 'CINE': 'Cine',
-            'OTROS': 'Otros', 'TOTAL MES': 'Total'
+            'OTROS': 'Otros', 'USO DE PC': 'Uso de PC', 'TOTAL MES': 'Total'
         }
 
         # 1. Cargar toda la configuración en un diccionario
@@ -3560,6 +3576,15 @@ class InfoplazaAnalyzer(QMainWindow):
             fecha_inicio = params['fecha_inicio']
             fecha_fin = params['fecha_fin']
             
+            # Pre-cargar cuentas de usuario para clasificación de 'Uso de PC'
+            try:
+                ua_rows = db.execute_query("SELECT username FROM useraccount_cache")
+                self.useraccount_set = {row['username'].upper().strip() for row in ua_rows}
+                print(f"[INFO] {len(self.useraccount_set)} cuentas de usuario cargadas para clasificación.")
+            except Exception as e:
+                print(f"[WARN] No se pudieron cargar cuentas de usuario: {e}")
+                self.useraccount_set = set()
+            
             # Lanzar el Worker de análisis real (que lee de SQLite)
             self.worker = Worker(self.db_path, DB_PASSWORD, fecha_inicio, fecha_fin)
             self.worker.finished.connect(self.analysis_finished)
@@ -3865,10 +3890,12 @@ class InfoplazaAnalyzer(QMainWindow):
             # Ahora modificamos la misma variable 'servicios'
             servicios = servicios.reindex(meses_seleccionados, axis=0).fillna(0).reset_index()
             
-            otros_cols = [c for c in servicios.columns if c not in SERVICIOS + ['MES', 'TOTAL MES']]
+            otros_cols = [c for c in servicios.columns if c not in SERVICIOS + ['MES', 'TOTAL MES', 'USO DE PC']]
             servicios['OTROS'] = servicios[otros_cols].sum(axis=1)
             
-            column_order = ['MES'] + SERVICIOS + ['OTROS', 'TOTAL MES']
+            if 'USO DE PC' not in servicios.columns:
+                servicios['USO DE PC'] = 0
+            column_order = ['MES'] + SERVICIOS + ['OTROS', 'USO DE PC', 'TOTAL MES']
             servicios = servicios[column_order]
 
             total_row = servicios[servicios.columns.drop('MES')].sum()
@@ -4306,6 +4333,19 @@ class InfoplazaAnalyzer(QMainWindow):
                 
                 # --- FIN DE LA LÓGICA MEJORADA ---
 
+        # --- REGLAS DE CLASIFICACIÓN 'USO DE PC' ---
+        
+        # Regla 1: Diccionario por patrones de palabra (RegEx)
+        for palabra in palabras_item:
+            for patron in PATRONES_USO_PC:
+                if patron.match(palabra):
+                    return 'USO DE PC'
+        
+        # Regla 2: Búsqueda en base de datos de cuentas de usuario
+        if hasattr(self, 'useraccount_set') and self.useraccount_set:
+            if itemname_upper.strip() in self.useraccount_set:
+                return 'USO DE PC'
+        
         return 'OTROS'
 
     def exportar_excel(self):
