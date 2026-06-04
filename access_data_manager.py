@@ -256,8 +256,8 @@ try {
 
     @classmethod
     def extraer_useraccounts(cls, db_path, password):
-        """Extrae todos los nombres de usuario de la tabla USERACCOUNT."""
-        query = "SELECT USERNAME FROM USERACCOUNT"
+        """Extrae todos los nombres de usuario y sexo de la tabla USERACCOUNT."""
+        query = "SELECT USERNAME, SEX FROM USERACCOUNT"
         data, error = cls._execute_bridge_query(db_path, password, query)
         
         if error:
@@ -266,5 +266,13 @@ try {
         if not data:
             return [], None
         
-        usernames = [str(row.get('USERNAME', '')).strip() for row in data if row.get('USERNAME')]
-        return usernames, None
+        # Guardamos en un diccionario {'username': '...', 'sex': '...'}
+        accounts = []
+        for row in data:
+            username = str(row.get('USERNAME', '')).strip()
+            if username:
+                accounts.append({
+                    'username': username,
+                    'sex': str(row.get('SEX', '')).strip().upper()
+                })
+        return accounts, None

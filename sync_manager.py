@@ -146,15 +146,15 @@ class SyncManager:
             Tuple[int, str]: (Registros insertados, Mensaje error si hubo)
         """
         try:
-            # 1. Obtener usernames desde Access
-            usernames, error = AccessDataManager.extraer_useraccounts(
+            # 1. Obtener cuentas desde Access
+            accounts, error = AccessDataManager.extraer_useraccounts(
                 self.access_db_path, self.access_db_password
             )
             
             if error:
                 return 0, f"Error leyendo USERACCOUNT de Access: {error}"
             
-            if not usernames:
+            if not accounts:
                 print("[SYNC USERACCOUNT] No se encontraron cuentas de usuario.")
                 return 0, None
             
@@ -163,12 +163,12 @@ class SyncManager:
             try:
                 conn.execute("DELETE FROM useraccount_cache")
                 conn.executemany(
-                    "INSERT OR IGNORE INTO useraccount_cache (username) VALUES (?)",
-                    [(u,) for u in usernames]
+                    "INSERT OR IGNORE INTO useraccount_cache (username, sex) VALUES (?, ?)",
+                    [(acc['username'], acc['sex']) for acc in accounts]
                 )
                 conn.commit()
-                count = len(usernames)
-                print(f"[SYNC USERACCOUNT] {count} cuentas sincronizadas.")
+                count = len(accounts)
+                print(f"[SYNC USERACCOUNT] {count} cuentas sincronizadas con sexo.")
                 return count, None
             except Exception as e:
                 conn.rollback()

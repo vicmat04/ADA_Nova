@@ -3576,14 +3576,17 @@ class InfoplazaAnalyzer(QMainWindow):
             fecha_inicio = params['fecha_inicio']
             fecha_fin = params['fecha_fin']
             
-            # Pre-cargar cuentas de usuario para clasificación de 'Uso de PC'
+            # Pre-cargar cuentas de usuario para clasificación y sexo
             try:
-                ua_rows = db.execute_query("SELECT username FROM useraccount_cache")
-                self.useraccount_set = {row['username'].upper().strip() for row in ua_rows}
-                print(f"[INFO] {len(self.useraccount_set)} cuentas de usuario cargadas para clasificación.")
+                ua_rows = db.execute_query("SELECT username, sex FROM useraccount_cache")
+                self.useraccount_dict = {
+                    row['username'].upper().strip(): str(row['sex'] or '').upper() 
+                    for row in ua_rows
+                }
+                print(f"[INFO] {len(self.useraccount_dict)} cuentas de usuario cargadas en diccionario.")
             except Exception as e:
                 print(f"[WARN] No se pudieron cargar cuentas de usuario: {e}")
-                self.useraccount_set = set()
+                self.useraccount_dict = {}
             
             # Lanzar el Worker de análisis real (que lee de SQLite)
             self.worker = Worker(self.db_path, DB_PASSWORD, fecha_inicio, fecha_fin)
@@ -4342,8 +4345,8 @@ class InfoplazaAnalyzer(QMainWindow):
                     return 'USO DE PC'
         
         # Regla 2: Búsqueda en base de datos de cuentas de usuario
-        if hasattr(self, 'useraccount_set') and self.useraccount_set:
-            if itemname_upper.strip() in self.useraccount_set:
+        if hasattr(self, 'useraccount_dict') and self.useraccount_dict:
+            if itemname_upper.strip() in self.useraccount_dict:
                 return 'USO DE PC'
         
         return 'OTROS'
@@ -4586,8 +4589,18 @@ class InfoplazaAnalyzer(QMainWindow):
 
 
 def analizar_itemname(data):
-    # 1. Se crea una instancia del procesador. Esto reinicia el contador cada vez.
-    procesador = ProcesadorItemName()
+    # 1. Se inicializa el procesador, pasando el diccionario de cuentas
+    # NOTA: Como esto es una función global y no un método de instancia,
+    # 'self' no está disponible. Recuperamos el diccionario directamente de la DB.
+    try:
+        ua_rows = db.execute_query("SELECT username, sex FROM useraccount_cache")
+        useraccount_dict = {
+            row['username'].upper().strip(): str(row['sex'] or '').upper() 
+            for row in ua_rows
+        }
+    except Exception:
+        useraccount_dict = {}
+    procesador = ProcesadorItemName(useraccount_dict)
     
     # 2. Se aplica el método de la instancia a cada fila del DataFrame.
     #    La instancia 'procesador' mantendrá la cuenta durante todo el proceso.
@@ -4597,10 +4610,11 @@ def analizar_itemname(data):
 
 # --- INICIO: NUEVA CLASE DE PROCESADOR MEJORADA ---
 class ProcesadorItemName:
-    def __init__(self):
+    def __init__(self, useraccount_dict=None):
         self.rotary_sex_counter = 0
         self.OPCIONES_SEXO = ['M', 'F']
         self.OPCIONES_TIPO_U = ['P', 'S', 'U', 'D', 'TE', 'PG']
+        self.useraccount_dict = useraccount_dict or {}
 
     def procesar_fila(self, row):
         itemname = str(row['ITEMNAME']).upper()
@@ -4654,6 +4668,16 @@ class ProcesadorItemName:
             else: sexo_final = 'F'
             self.rotary_sex_counter += 1
             observacion = 'DEFAULT: DATOS INVÁLIDOS'
+
+        # --- CORRECCIÓN DE SEXO VIA DB ---
+        if observacion in ['DEFAULT: SIN SEXO', 'DEFAULT: DATOS INVÁLIDOS']:
+            # Usar itemname_original para asegurar coincidencia exacta
+            itemname_original = itemname.strip()
+            if itemname_original in self.useraccount_dict:
+                sexo_db = self.useraccount_dict[itemname_original]
+                if sexo_db in self.OPCIONES_SEXO:
+                    sexo_final = sexo_db
+                    observacion = 'CORREGIDO VIA DB'
 
         return pd.Series([sexo_final, tipo_u_final, observacion])
 # --- FIN DE LA NUEVA CLASE ---

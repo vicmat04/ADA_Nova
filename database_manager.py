@@ -122,7 +122,8 @@ class DatabaseManager:
             # 5. Cache de Cuentas de Usuario (Desde Access)
             """
             CREATE TABLE IF NOT EXISTS useraccount_cache (
-                username TEXT PRIMARY KEY
+                username TEXT PRIMARY KEY,
+                sex TEXT
             );
             """
         ]
@@ -135,8 +136,9 @@ class DatabaseManager:
         finally:
             conn.close()
         
-        # Migración: Asegurar que la columna access_id existe en registros_ventas_cache
+        # Migraciones
         self._migrar_id_access()
+        self._migrar_useraccount_sex()
 
     def _migrar_id_access(self):
         """Añade la columna access_id si no existe (Migración v4.0.2)."""
@@ -156,6 +158,24 @@ class DatabaseManager:
             conn.rollback()
         finally:
             conn.close()
+
+    def _migrar_useraccount_sex(self):
+        """Añade la columna sex a useraccount_cache si no existe."""
+        conn = self.get_connection()
+        try:
+            cursor = conn.execute("PRAGMA table_info(useraccount_cache)")
+            columns = [row['name'] for row in cursor.fetchall()]
+            
+            if 'sex' not in columns:
+                print("[DB_LOCAL] Migrando: Añadiendo columna sex a useraccount_cache...")
+                conn.execute("ALTER TABLE useraccount_cache ADD COLUMN sex TEXT")
+                conn.commit()
+        except Exception as e:
+            print(f"[DB_LOCAL] Error en migración de useraccount_sex: {e}")
+            conn.rollback()
+        finally:
+            conn.close()
+
 
     # =========================================================================
     # MÉTODOS DE UTILIDAD GENERAL
