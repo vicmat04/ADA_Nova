@@ -161,9 +161,9 @@ def format_duration(seconds):
 
 
 # Configuración modificada para rutas más flexibles... versión
-VERSION = "4.0.4.3"
+VERSION = "4.0.4.4"
 VERSION_UI = ".".join(VERSION.split(".")[:3])
-fechaVersion = "27/05/2026"
+fechaVersion = "26/06/2026"
 AUTOR = "A.D.A. © 2026 Víctor Domínguez. Todos los derechos reservados."
 
 # Obtener rutas dinámicas
@@ -4426,6 +4426,36 @@ class InfoplazaAnalyzer(QMainWindow):
             self._mostrar_mensaje("Error", "No hay datos para exportar.", QMessageBox.Warning)
             return
             
+        from PyQt5.QtWidgets import QDialog, QDialogButtonBox, QVBoxLayout, QLabel, QCheckBox
+
+            
+        # --- DIÁLOGO DE OPCIONES DE EXPORTACIÓN ---
+        dialog = QDialog(self)
+        dialog.setWindowTitle("Opciones de Exportación a PDF")
+        dialog.setMinimumWidth(350)
+        dialog.setStyleSheet("QDialog { background-color: #ffffff; } QLabel, QCheckBox { color: #333333; font-size: 13px; }")
+        
+        layout_dialog = QVBoxLayout(dialog)
+        
+        lbl_info = QLabel("¿Qué información desea incluir en el Informe Ejecutivo?")
+        lbl_info.setWordWrap(True)
+        layout_dialog.addWidget(lbl_info)
+        
+        cb_incluir_metas = QCheckBox("Incluir anexo con el estado de las Metas")
+        cb_incluir_metas.setChecked(True)
+        layout_dialog.addWidget(cb_incluir_metas)
+        
+        btn_box = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+        btn_box.accepted.connect(dialog.accept)
+        btn_box.rejected.connect(dialog.reject)
+        layout_dialog.addWidget(btn_box)
+        
+        if dialog.exec_() != QDialog.Accepted:
+            return
+            
+        incluir_metas = cb_incluir_metas.isChecked()
+        # ------------------------------------------
+
         try:
             import jinja2
             
@@ -4529,6 +4559,78 @@ class InfoplazaAnalyzer(QMainWindow):
             logo_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'icons', 'LOGO INFOPLAZAS.png')
             logo_uri = f"file:///{logo_path.replace(os.sep, '/')}"
             
+            # Recopilar datos de las metas si fue seleccionado
+            datos_metas = None
+            if incluir_metas and hasattr(self, 'tab_metas') and self.tab_metas.calculator:
+                estado_global = self.tab_metas.calculator.calcular_estado_global()
+                detalles_metas = []
+                total_puntos = 0.0
+                total_peso = 0.0
+                
+                # Usar la lista dinámica de actividades que carga el widget desde Google Sheets
+                lista_actividades = self.tab_metas.current_data.get('actividades_config') or []
+                
+                for act in lista_actividades:
+                    prog = self.tab_metas.calculator.calcular_progreso_actividad(act)
+                    puntos, peso = self.tab_metas.calculator.calcular_puntos_ganados(act)
+                    
+                    porcentaje_real = prog['porcentaje']
+                    # Regla: mostrar máximo 100% (igual que las tarjetas visuales)
+                    porcentaje_display = min(porcentaje_real, 100.0)
+                    
+                    color_data = self.tab_metas.calculator._determinar_colores(porcentaje_display)
+                    
+                    # Calcular el extra (fueguito) solo si superó la meta
+                    extra = ""
+                    if porcentaje_real > 100:
+                        extra = f"🔥 (+{int(prog['completado']) - int(prog['meta_total'])})"
+                    
+                    puntos_display = round(min(puntos, peso), 1)  # Puntos también capeados al máximo
+                    total_puntos += puntos_display
+                    total_peso += peso
+                        
+                    detalles_metas.append({
+                        'nombre': act.display_name,
+                        'completado': int(prog['completado']),
+                        'total': int(prog['meta_total']),
+                        'porcentaje': round(porcentaje_display, 1),
+                        'puntos': puntos_display,
+                        'peso': round(peso, 1),
+                        'color': color_data['color'],
+                        'extra': extra
+                    })
+                    
+                # Estado por mes (si se subió o no el reporte)
+                from metas_config import MESES_PERIODO, PERIODO_INICIO, PERIODO_FIN
+                meses_estado = []
+                for mes in MESES_PERIODO:
+                    estado_mes = self.tab_metas.calculator.obtener_estado_mes(mes)
+                    meses_estado.append({
+                        'mes': mes,
+                        'subido': estado_mes['subio_reporte'],
+                        'simbolo': estado_mes['simbolo'],
+                        'color': estado_mes['color_text']
+                    })
+                
+                # Período formateado para el encabezado
+                MESES_ES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio',
+                            'Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre']
+                periodo_str = (
+                    f"{MESES_ES[PERIODO_INICIO.month - 1]} {PERIODO_INICIO.year} — "
+                    f"{MESES_ES[PERIODO_FIN.month - 1]} {PERIODO_FIN.year}"
+                )
+                
+                datos_metas = {
+                    'porcentaje_global': round(estado_global['progreso'], 1),
+                    'estado_general': estado_global['estado'],
+                    'detalles': detalles_metas,
+                    'total_puntos': round(total_puntos, 1),
+                    'total_peso': round(total_peso, 1),
+                    'infoplaza': infoplaza_nombre,
+                    'periodo': periodo_str,
+                    'meses_estado': meses_estado,
+                } if detalles_metas else None
+            
             html_content = template.render(
                 logo_path=logo_uri,
                 infoplaza_nombre=infoplaza_nombre,
@@ -4538,7 +4640,8 @@ class InfoplazaAnalyzer(QMainWindow):
                 meta_mensual=meta_mensual_total,
                 kpis=kpis,
                 tabla_resumen=tabla_resumen,
-                tabla_rendimiento=tabla_rendimiento
+                tabla_rendimiento=tabla_rendimiento,
+                datos_metas=datos_metas
             )
             
             # 5. Guardar el PDF

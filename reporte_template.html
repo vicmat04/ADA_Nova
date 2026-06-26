@@ -261,5 +261,96 @@
         </tbody>
     </table>
 
+    {% if datos_metas %}
+    <div style="page-break-before: always;"></div>
+
+    <!-- ═══ ENCABEZADO PÁGINA DE METAS ═══ -->
+    <div class="header" style="margin-top: 15px; padding-bottom: 12px;">
+        <table style="width: 100%; border: none;">
+            <tr>
+                <td style="border: none; text-align: left; width: 120px;">
+                    <img src="{{ logo_path }}" class="logo" alt="Logo Infoplaza">
+                </td>
+                <td style="border: none; text-align: right;">
+                    <div class="header-content">
+                        <h1 style="font-size: 18pt;">Estado de Metas para Dinamizadores</h1>
+                        <h2 style="font-size: 11pt; color: #34495e; font-weight: normal; margin-top: 4px;">
+                            {{ datos_metas.infoplaza }}
+                        </h2>
+                        <p style="font-size: 9pt; color: #7f8c8d; margin: 2px 0 0;">
+                            Período: {{ datos_metas.periodo }}
+                        </p>
+                    </div>
+                </td>
+            </tr>
+        </table>
+    </div>
+
+    <!-- ═══ AVANCE GLOBAL ═══ -->
+    <div style="background-color: #f8f9fa; border: 1px solid #e0e0e0; border-radius: 6px; padding: 10px 16px; margin-bottom: 18px; display: flex;">
+        <table style="width: 100%; border: none;">
+            <tr>
+                <td style="border: none; width: 60%;">
+                    <span style="font-size: 9pt; color: #7f8c8d; text-transform: uppercase; letter-spacing: 0.5px;">Avance Global del Período</span><br>
+                    <span style="font-size: 22pt; font-weight: bold; color: {{ '#28a745' if datos_metas.porcentaje_global >= 80 else '#f39c12' if datos_metas.porcentaje_global >= 50 else '#e74c3c' }};">
+                        {{ datos_metas.porcentaje_global }}%
+                    </span>
+                    <span style="font-size: 9pt; color: #7f8c8d; margin-left: 6px;">
+                        ({{ datos_metas.total_puntos }} / {{ datos_metas.total_peso }} puntos)
+                    </span>
+                </td>
+                <td style="border: none; text-align: right; width: 40%; vertical-align: middle;">
+                    <span style="font-size: 9pt; color: #7f8c8d; text-transform: uppercase; letter-spacing: 0.5px;">Estado del Reporte por Mes</span><br>
+                    <span style="font-size: 9pt;">
+                        {% for m in datos_metas.meses_estado %}
+                        <span style="
+                            display: inline-block;
+                            margin: 2px 1px;
+                            padding: 2px 6px;
+                            border-radius: 3px;
+                            font-size: 8pt;
+                            font-weight: bold;
+                            background-color: {{ '#d4edda' if m.subido else '#f8d7da' }};
+                            color: {{ m.color }};
+                        ">{{ m.mes[:3] }} {{ m.simbolo }}</span>
+                        {% endfor %}
+                    </span>
+                </td>
+            </tr>
+        </table>
+    </div>
+
+    <!-- ═══ TABLA DE METAS ═══ -->
+    <table class="data-table" style="width: 100%;">
+        <thead>
+            <tr>
+                <th style="width: 32%; text-align: left; padding-left: 10px;">Meta / Actividad</th>
+                <th style="width: 18%;">Logrado / Esperado</th>
+                <th style="width: 16%;">Excedente</th>
+                <th style="width: 18%;">Puntos Ganados</th>
+                <th style="width: 16%;">Progreso</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for meta in datos_metas.detalles %}
+            <tr>
+                <td style="text-align: left; font-weight: bold; padding-left: 10px;">{{ meta.nombre }}</td>
+                <td>{{ meta.completado }} / {{ meta.total }}</td>
+                <td>{% if meta.extra %}<span style="color: #e67e22; font-weight: bold;">{{ meta.extra }}</span>{% else %}<span style="color: #bdc3c7;">—</span>{% endif %}</td>
+                <td>{{ meta.puntos }} / {{ meta.peso }}</td>
+                <td style="font-weight: bold; color: {{ meta.color }};">{{ meta.porcentaje }}%</td>
+            </tr>
+            {% endfor %}
+            <tr class="table-total">
+                <td style="text-align: left; padding-left: 10px;">TOTAL GENERAL</td>
+                <td>—</td>
+                <td>—</td>
+                <td>{{ datos_metas.total_puntos }} / {{ datos_metas.total_peso }}</td>
+                <td>{{ datos_metas.porcentaje_global }}%</td>
+            </tr>
+        </tbody>
+    </table>
+    {% endif %}
+
 </body>
 </html>
