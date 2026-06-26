@@ -2157,8 +2157,20 @@ class MetasCardWidget(QWidget):
         
         card, layout = self.create_card_base(actividad.display_name, icono)
         
+        # Lógica de sobrecumplimiento
+        if progreso['porcentaje'] > 100:
+            surplus_porcentaje = progreso['porcentaje'] - 100
+            completado = float(progreso['completado'])
+            meta = float(progreso['meta_total'])
+            puntos_extra = int(completado - meta) if completado - meta > 0 else (completado - meta)
+            
+            tooltip_text = f"Superaste la meta por {puntos_extra} puntos, +{surplus_porcentaje:.1f}% sobre la meta."
+        else:
+            tooltip_text = f"Progreso: {progreso['porcentaje']:.1f}%"
+            
         # Barra de progreso usando helper (colores dinámicos + CSS)
         bar = self._create_progress_bar(progreso)
+        bar.setToolTip(tooltip_text)
         layout.addWidget(bar)
         
         # Etiquetas de rango y valor central (CONSOLIDADO EN UNA LÍNEA)
@@ -2222,7 +2234,14 @@ class MetasCardWidget(QWidget):
         # NUEVO: Usar clase CSS para texto secundario CON COLOR DINÁMICO
         if self.calculator:
             puntos, peso_max = self.calculator.calcular_puntos_ganados(actividad)
-            lbl_perc = QLabel(f"{puntos:.1f}% de {peso_max:.1f}% ganados")
+            texto_puntos = f"{puntos:.1f}% de {peso_max:.1f}% ganados"
+            
+            if progreso['porcentaje'] > 100:
+                texto_puntos += " (🔥)"
+                
+            lbl_perc = QLabel(texto_puntos)
+            if progreso['porcentaje'] > 100:
+                lbl_perc.setToolTip(tooltip_text)
             
             # Aplicar mismo estado de color que el label principal
             if 'estado' in progreso:
@@ -2291,7 +2310,15 @@ class MetasCardWidget(QWidget):
             
             lbl_0 = QLabel("0%")
             # Valor centrado
-            lbl_val = QLabel(f"{int(p_data['completado'])} / {int(p_data['meta_total'])}")
+            texto_val = f"{int(p_data['completado'])} / {int(p_data['meta_total'])}"
+            if p_data['porcentaje'] > 100:
+                texto_val += " 🔥"
+            lbl_val = QLabel(texto_val)
+            
+            if p_data['porcentaje'] > 100:
+                puntos_extra = int(p_data['completado']) - int(p_data['meta_total'])
+                lbl_val.setToolTip(f"Superaste la meta por {puntos_extra} puntos.")
+                
             lbl_100 = QLabel("100%")
             
             for lbl in [lbl_0, lbl_val, lbl_100]:
@@ -2503,14 +2530,32 @@ class MetasCardWidget(QWidget):
             lbl_sub.setProperty("class", "subtitle")
             layout.addWidget(lbl_sub)
             
+            if progreso['porcentaje'] > 100:
+                surplus_porcentaje = progreso['porcentaje'] - 100
+                completado = float(progreso['completado'])
+                meta = float(progreso['meta_total'])
+                puntos_extra = int(completado - meta) if completado - meta > 0 else (completado - meta)
+                tooltip_text = f"Superaste la meta por {puntos_extra} puntos, +{surplus_porcentaje:.1f}% sobre la meta."
+            else:
+                tooltip_text = f"Progreso: {progreso['porcentaje']:.1f}%"
+            
             # Barra de progreso
             pbar = self._create_progress_bar(progreso)
+            pbar.setToolTip(tooltip_text)
             layout.addWidget(pbar)
             
             # Texto descriptivo
             completado = int(progreso['completado'])
             meta = int(progreso['meta_total'])
-            lbl_desc = QLabel(f"{completado}/{meta} logrados")
+            texto_desc = f"{completado}/{meta} logrados"
+            
+            if progreso['porcentaje'] > 100:
+                texto_desc += " 🔥"
+                
+            lbl_desc = QLabel(texto_desc)
+            if progreso['porcentaje'] > 100:
+                lbl_desc.setToolTip(tooltip_text)
+                
             lbl_desc.setProperty("class", "body")
             lbl_desc.setAlignment(Qt.AlignCenter)
             layout.addWidget(lbl_desc)
@@ -2522,7 +2567,9 @@ class MetasCardWidget(QWidget):
             puntos_totales = sum(self.calculator.calcular_puntos_ganados(a)[0] for a in actividades)
             peso_maximo = sum(self.calculator.calcular_puntos_ganados(a)[1] for a in actividades)
             
-            lbl_totales = QLabel(f"{puntos_totales:.1f}% de {peso_maximo:.1f}% ganados")
+            texto_totales = f"{puntos_totales:.1f}% de {peso_maximo:.1f}% ganados"
+            
+            lbl_totales = QLabel(texto_totales)
             lbl_totales.setAlignment(Qt.AlignCenter)
             lbl_totales.setProperty("class", "MetaSecondaryText")
             
@@ -2668,7 +2715,8 @@ class MetasCardWidget(QWidget):
         # CRÍTICO: Limitar visualmente a 100 para evitar que la barra "desaparezca" o se renderice mal
         pbar.setValue(min(100, int(progreso['porcentaje'])))
         pbar.setTextVisible(True)
-        pbar.setFormat(f"{progreso['porcentaje']:.1f}%")
+        perc_display = min(100.0, progreso['porcentaje'])
+        pbar.setFormat(f"{perc_display:.1f}%")
         # Height controlado por CSS: .ActivityItem QProgressBar { height: 12px; }
         
         # Usar color dinámico del calculator si existe
