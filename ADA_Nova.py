@@ -3583,10 +3583,21 @@ class InfoplazaAnalyzer(QMainWindow):
                     row['username'].upper().strip(): str(row['sex'] or '').upper() 
                     for row in ua_rows
                 }
+                # --- NUEVA LÓGICA PREPROCESADA ---
+                import unicodedata
+                def normalizar_texto(texto):
+                    if not texto: return ""
+                    return "".join(c for c in unicodedata.normalize('NFD', str(texto).strip().upper()) if unicodedata.category(c) != 'Mn')
+                
+                self.useraccount_norm = {normalizar_texto(k): v for k, v in self.useraccount_dict.items()}
+                self.primeros_nombres_norm = {k.split()[0] for k in self.useraccount_norm.keys() if k.split()}
+                # ---------------------------------
                 print(f"[INFO] {len(self.useraccount_dict)} cuentas de usuario cargadas en diccionario.")
             except Exception as e:
                 print(f"[WARN] No se pudieron cargar cuentas de usuario: {e}")
                 self.useraccount_dict = {}
+                self.useraccount_norm = {}
+                self.primeros_nombres_norm = set()
             
             # Lanzar el Worker de análisis real (que lee de SQLite)
             self.worker = Worker(self.db_path, DB_PASSWORD, fecha_inicio, fecha_fin)
@@ -4344,10 +4355,44 @@ class InfoplazaAnalyzer(QMainWindow):
                 if patron.match(palabra):
                     return 'USO DE PC'
         
-        # Regla 2: Búsqueda en base de datos de cuentas de usuario
+        # Regla 2: Coincidencia exacta original
         if hasattr(self, 'useraccount_dict') and self.useraccount_dict:
             if itemname_upper.strip() in self.useraccount_dict:
                 return 'USO DE PC'
+        
+        # Regla 3: Comparación normalizada difusa y primer nombre (Nueva lógica flexible)
+        if hasattr(self, 'useraccount_norm') and self.useraccount_norm:
+            import unicodedata
+            def normalizar_texto(texto):
+                if not texto: return ""
+                return "".join(c for c in unicodedata.normalize('NFD', str(texto).strip().upper()) if unicodedata.category(c) != 'Mn')
+            
+            itemname_limpio = ' '.join(str(itemname).replace('--', '-').strip('-').strip().split())
+            partes = [p.strip() for p in itemname_limpio.split('-') if p.strip()]
+            
+            # Remover sufijos típicos del final
+            sufijos_a_remover = {'M', 'F', 'P', 'S', 'U', 'D', 'TE', 'PG', 'VERIFICAR', 'OK', 'CORREGIDO VIA DB'}
+            while partes:
+                ultimo = partes[-1].upper()
+                if ultimo in sufijos_a_remover:
+                    partes.pop()
+                else:
+                    break
+            
+            if partes:
+                nombre_item = " ".join(partes)
+                nombre_item_norm = normalizar_texto(nombre_item)
+                
+                # Comparar nombre completo normalizado
+                if nombre_item_norm in self.useraccount_norm:
+                    return 'USO DE PC'
+                
+                # Comparar primer nombre normalizado
+                palabras_nombre = nombre_item_norm.split()
+                if palabras_nombre:
+                    primer_nombre_item = palabras_nombre[0]
+                    if primer_nombre_item in self.primeros_nombres_norm:
+                        return 'USO DE PC'
         
         return 'OTROS'
 
