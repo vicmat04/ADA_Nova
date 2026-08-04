@@ -494,22 +494,28 @@ QTableWidget::item[isTotal="true"] {
 
 /* --- MODO OSCURO (Dark Mode) --- */
 QMainWindow[theme="dark"] QTableWidget {
-    background-color: #1e293b; /* Azul Slate (mismo que gráficas) */
+    background-color: #1e293b; /* Azul Slate */
     alternate-background-color: #1f1f1f;
     gridline-color: transparent;
     border: 1px solid #303030;
-    selection-background-color: #111a2c;
-    selection-color: #177ddc;
+    selection-background-color: #0284c7;
+    selection-color: #ffffff;
 }
 
-/* Selector Directo (redundancia para mayor compatibilidad) */
+/* Selector Directo */
 QTableWidget[theme="dark"] {
-    background-color: #1e293b; /* Azul Slate (mismo que gráficas) */
+    background-color: #1e293b;
     alternate-background-color: #1f1f1f;
     gridline-color: transparent;
     border: 1px solid #303030;
-    selection-background-color: #111a2c;
-    selection-color: #177ddc;
+    selection-background-color: #0284c7;
+    selection-color: #ffffff;
+}
+
+QMainWindow[theme="dark"] QTableWidget::item:selected,
+QTableWidget[theme="dark"]::item:selected {
+    background-color: #0284c7;
+    color: #ffffff;
 }
 
 QMainWindow[theme="dark"] QHeaderView::section {
@@ -526,12 +532,12 @@ QTableWidget[theme="dark"] QHeaderView::section {
 
 QMainWindow[theme="dark"] QTableWidget::item {
     border-bottom: 1px solid #303030;
-    color: #8c8c8c;
+    color: #f1f5f9;
 }
 
 QTableWidget[theme="dark"]::item {
     border-bottom: 1px solid #303030;
-    color: #8c8c8c;
+    color: #f1f5f9;
 }
 
 QMainWindow[theme="dark"] QTableWidget::item[isTotal="true"] {
@@ -861,6 +867,31 @@ QPushButton#SupportLink:hover {
     background-color: #334155;
     color: #ffffff;
 }
+
+/* TABLE CELL INLINE EDITOR (DOUBLE CLICK) */
+QTableWidget QLineEdit {
+    background-color: #ffffff;
+    color: #0f172a;
+    border: 2px solid #0284c7;
+    border-radius: 4px;
+    margin: 0px;
+    padding: 4px 6px;
+    font-size: 13px;
+    selection-background-color: #0284c7;
+    selection-color: #ffffff;
+}
+[theme="dark"] QTableWidget QLineEdit {
+    background-color: #0f172a;
+    color: #f8fafc;
+    border: 2px solid #0284c7;
+    border-radius: 4px;
+    margin: 0px;
+    padding: 4px 6px;
+    font-size: 13px;
+    selection-background-color: #0284c7;
+    selection-color: #ffffff;
+}
+
 
 /* Typography Dark (Brighter/High Contrast) */
 QMainWindow[theme="dark"] QLabel[class="h1"] { color: #ffffff; }

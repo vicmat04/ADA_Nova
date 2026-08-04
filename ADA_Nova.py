@@ -89,18 +89,37 @@ except Exception as e:
 import subprocess # Para ejecutar el script .bat
 from facebook_module import FacebookAnalyzerWidget
 from metas_card_module import MetasCardWidget, MetasTableView
+from informe_cuatrimestral_module import InformeCuatrimestralWidget, PdfExitoDialog
+from infoplazas_tab_module import InfoplazasTabWidget
 from novedades_manager import NovedadesManager
 from novedades_ui import NovedadesWindow, SingleEventWindow
 #..Importaciones para las cámaras de vigilancia...#
 import platform
 import gspread
-from oauth2client.service_account import ServiceAccountCredentials
-
 import base64
 import json
+import urllib.request
+import time
+import contextlib
 
-import urllib.request  # <-- para el bloqueo
-import time            # <-- para el bloqueo
+@contextlib.contextmanager
+def suprimir_stderr_glib():
+    """Suprime advertencias informativas de C/GLib a stderr durante la generación de PDF en Windows."""
+    if os.name != 'nt':
+        yield
+        return
+    try:
+        stderr_fd = sys.stderr.fileno()
+        saved_stderr_fd = os.dup(stderr_fd)
+        with open(os.devnull, 'w') as devnull:
+            os.dup2(devnull.fileno(), stderr_fd)
+            try:
+                yield
+            finally:
+                os.dup2(saved_stderr_fd, stderr_fd)
+                os.close(saved_stderr_fd)
+    except Exception:
+        yield
 
 # Coloca esto al inicio de tu archivo, con los demás imports
 try:
@@ -161,9 +180,9 @@ def format_duration(seconds):
 
 
 # Configuración modificada para rutas más flexibles... versión
-VERSION = "4.0.4.4"
+VERSION = "4.0.4.8"
 VERSION_UI = ".".join(VERSION.split(".")[:3])
-fechaVersion = "26/06/2026"
+fechaVersion = "04/08/2026"
 AUTOR = "A.D.A. © 2026 Víctor Domínguez. Todos los derechos reservados."
 
 # Obtener rutas dinámicas
@@ -1392,10 +1411,14 @@ class Sidebar(QWidget):
         # Cuadro de Metas (solo visible en Modo Guerrero)
         self.btn_cuadro_metas = self.create_nav_button("Cuadro de Metas", QStyle.SP_FileDialogDetailedView, 3)
 
+        # Informe Cuatrimestral
+        self.btn_informe_cuatrimestral = self.create_nav_button("Informe Cuatrimestral", QStyle.SP_FileDialogContentsView, 4)
+
         layout.addWidget(self.btn_visitas)
         layout.addWidget(self.btn_facebook)
         layout.addWidget(self.btn_metas)
         layout.addWidget(self.btn_cuadro_metas)
+        layout.addWidget(self.btn_informe_cuatrimestral)
         
         # Ocultamos Cuadro de Metas por defecto
         self.btn_cuadro_metas.setVisible(False)
@@ -1699,8 +1722,14 @@ class InfoplazaAnalyzer(QMainWindow):
         self.meta_mensual = num_computadoras * 48
         self.modo_guerrero_activo = self.config.get('modo_guerrero_activo', False)
         self.carpeta_raiz = self.config.get('ultima_carpeta_raiz', None)
+        self.ultima_subcarpeta_guerrero = self.config.get('ultima_subcarpeta_guerrero', None)
+        self.ultimo_db_path_guerrero = self.config.get('ultimo_db_path_guerrero', None)
         self.is_dark_mode = self.config.get('dark_mode_enabled', False)
-        
+
+        # Restaurar la BD de Modo Guerrero si estuvo activo y el archivo existe
+        if self.modo_guerrero_activo and self.ultimo_db_path_guerrero and os.path.exists(self.ultimo_db_path_guerrero):
+            self.db_path = self.ultimo_db_path_guerrero
+
         # 3. Inicializar BitacoraManager con el estado inicial del modo facilitador
         self.bitacora = BitacoraManager(initial_facilitator_mode=self.modo_guerrero_activo)
         
@@ -1768,6 +1797,9 @@ class InfoplazaAnalyzer(QMainWindow):
         # 6 segundos después del inicio, forzamos la carga de datos globales (para tener badge de novedades listo)
         QTimer.singleShot(6000, lambda: self.tab_metas.refresh_data(require_user_id=False) if hasattr(self, 'tab_metas') else None)
 
+        # --- PRECARGA PROACTIVA DE INFORME CUATRIMESTRAL (Segundo plano) ---
+        QTimer.singleShot(9000, lambda: self.tab_informe_cuatrimestral.iniciar_precarga_background() if hasattr(self, 'tab_informe_cuatrimestral') else None)
+
         # --- POLLING AUTOMÁTICO DE NOVEDADES (Cada 30 min) ---
         # Mantiene la app actualizada si se deja abierta por largo tiempo
         self.novedades_polling_timer = QTimer(self)
@@ -1784,8 +1816,11 @@ class InfoplazaAnalyzer(QMainWindow):
 
     def trigger_access_sync(self):
         """Inicia la sincronización incremental de Access en segundo plano."""
-        # Usamos las constantes globales definidas en el módulo
-        self.sync_thread = DataSyncThread(DB_DEFAULT_PATH, DB_PASSWORD)
+        target_path = DB_DEFAULT_PATH
+        if getattr(self, 'modo_guerrero_activo', False) and getattr(self, 'db_path', None) and os.path.exists(self.db_path):
+            target_path = self.db_path
+
+        self.sync_thread = DataSyncThread(target_path, DB_PASSWORD)
         self.sync_thread.finished.connect(self.on_sync_finished)
         self.sync_thread.start()
 
@@ -1804,6 +1839,10 @@ class InfoplazaAnalyzer(QMainWindow):
                     log_to_file(msg)
                 # Opcional: Notificar en barra de estado si existe
                 # self.statusBar().showMessage(msg, 5000)
+
+        # Refrescar el Informe Cuatrimestral cuando los registros de Access terminan de cargarse en SQLite
+        if hasattr(self, 'tab_informe_cuatrimestral') and self.tab_informe_cuatrimestral:
+            self.tab_informe_cuatrimestral.refresh_infoplaza()
 
     # ----------------------------------------------------------------------
     # MÉTODOS DE ACTUALIZACIÓN Y CIERRE
@@ -2241,11 +2280,13 @@ class InfoplazaAnalyzer(QMainWindow):
         self._update_matplotlib_theme()
         self._reaplicar_estilos_totales()
         
-        # ACTUALIZACIÓN: Nuevos tabs de metas
+        # ACTUALIZACIÓN: Nuevos tabs de metas e informe cuatrimestral
         if hasattr(self, 'tab_metas') and self.tab_metas:
             self.tab_metas.update_theme(self.is_dark_mode)
         if hasattr(self, 'tab_cuadro_metas') and self.tab_cuadro_metas:
             self.tab_cuadro_metas.update_theme(self.is_dark_mode)
+        if hasattr(self, 'tab_informe_cuatrimestral') and self.tab_informe_cuatrimestral:
+            self.tab_informe_cuatrimestral.update_theme(self.is_dark_mode)
             
         # [FIX] Forzar actualización de estilo en el contenedor principal
         self.content_container.style().unpolish(self.content_container)
@@ -2574,6 +2615,11 @@ class InfoplazaAnalyzer(QMainWindow):
         self.tab_cuadro_metas = MetasTableView(main_app=self)
         self.pages_widget.addWidget(self.tab_cuadro_metas)
 
+        # --- Pestaña 5: Informe Cuatrimestral ---
+        self.tab_informe_cuatrimestral = InformeCuatrimestralWidget(main_app=self)
+        self.tab_informe_cuatrimestral.pdf_requested.connect(self.generar_pdf_cuatrimestral)
+        self.pages_widget.addWidget(self.tab_informe_cuatrimestral)
+
         # --- Footer Global ---
         content_layout.addLayout(self._crear_footer())
 
@@ -2658,13 +2704,14 @@ class InfoplazaAnalyzer(QMainWindow):
                     )
                     cached_user = str(rows_cache[0]['username']).strip() if rows_cache else None
 
-                    if cached_user and cached_user.lower() != user.strip().lower():
+                    if not cached_user or cached_user.lower() != user.strip().lower():
                         log_to_file(
                             f"[DB CHANGE] Cambio de base detectado. "
                             f"Caché='{cached_user}' → Access='{user}'. "
                             f"Reseteando caché y relanzando sync completo..."
                         )
                         db.reset_sync_data()
+                        self.data = pd.DataFrame()
                         # Re-lanzar sync desde 0. Si hay un thread en curso le damos
                         # 3 seg para que termine antes de lanzar el nuevo.
                         if hasattr(self, 'sync_thread') and self.sync_thread.isRunning():
@@ -2686,6 +2733,10 @@ class InfoplazaAnalyzer(QMainWindow):
                 # También actualizar el cuadro de metas si existe (pestaña 3)
                 if hasattr(self, 'tab_cuadro_metas') and self.tab_cuadro_metas:
                     self.tab_cuadro_metas.refresh_data()
+
+                # Sincronizar Informe Cuatrimestral con el usuario real de la BD activa
+                if hasattr(self, 'tab_informe_cuatrimestral') and self.tab_informe_cuatrimestral:
+                    self.tab_informe_cuatrimestral.refresh_infoplaza()
             else:
                 self.current_username = None
                 self.label_ultimo_user.setText("👤 Usuario: Sin datos")
@@ -2974,6 +3025,8 @@ class InfoplazaAnalyzer(QMainWindow):
 
     def _reaplicar_estilos_totales(self):
         """Recorre todas las tablas y actualiza el estilo de las filas de totales al cambiar el tema."""
+        if not (hasattr(self, 'tab_resumen') and hasattr(self, 'tab_rendimiento') and hasattr(self, 'tab_servicios')):
+            return
         tablas = [self.tab_resumen, self.tab_rendimiento, self.tab_servicios]
         
         for tabla in tablas:
@@ -3053,6 +3106,7 @@ class InfoplazaAnalyzer(QMainWindow):
         self.tab_servicios = tab4_components['tabla']
         self.tabs.addTab(tab4_components['widget'], "Servicios")
         
+        # (La Pestaña Catálogo Maestro de Infoplazas se movió a Informe Cuatrimestral)
         # --- INICIO DE LA MODIFICACIÓN: Iconos específicos para cada gráfico ---
         self.tabs.addTab(self._crear_panel_grafico_rendimiento(), self.style().standardIcon(QStyle.SP_ArrowUp), "Gráfico de Rendimiento")
         self.tabs.addTab(self._crear_panel_grafico_demografia_sexo(), self.style().standardIcon(QStyle.SP_DesktopIcon), "Gráfico de Género")
@@ -3235,6 +3289,11 @@ class InfoplazaAnalyzer(QMainWindow):
         if hasattr(self, 'tab_metas') and hasattr(self.tab_metas, 'update_facilitator_mode_visibility'):
             self.tab_metas.update_facilitator_mode_visibility(self.modo_guerrero_activo)
 
+        # Notificar al Informe Cuatrimestral (Gestión de Catálogo para Facilitadores)
+        if hasattr(self, 'tab_informe_cuatrimestral') and hasattr(self.tab_informe_cuatrimestral, 'actualizar_modo_facilitador'):
+            self.tab_informe_cuatrimestral.actualizar_modo_facilitador(self.modo_guerrero_activo)
+
+        # La pestaña de Infoplazas ahora está en Informe Cuatrimestral
         if hasattr(self, 'btn_exportar_pdf'):
             self.btn_exportar_pdf.setVisible(self.modo_guerrero_activo)
             tiene_datos = getattr(self, 'data', None) is not None
@@ -3258,7 +3317,11 @@ class InfoplazaAnalyzer(QMainWindow):
             self.cargar_subcarpetas()
             self.config['ultima_carpeta_raiz'] = self.carpeta_raiz
             self.guardar_configuracion()
-        
+            
+            # Notificar al Informe Cuatrimestral del cambio de ruta para que actualice Infoplazas
+            if hasattr(self, 'tab_informe_cuatrimestral') and self.tab_informe_cuatrimestral:
+                if hasattr(self.tab_informe_cuatrimestral, 'tab_infoplazas') and getattr(self, 'modo_guerrero_activo', False):
+                    self.tab_informe_cuatrimestral.tab_infoplazas.set_regional_from_path(self.carpeta_raiz)
 
 
     def cargar_subcarpetas(self):
@@ -3271,23 +3334,40 @@ class InfoplazaAnalyzer(QMainWindow):
             return
         self.combo_subcarpetas.addItems(subcarpetas)
 
+        # Auto-seleccionar la última subcarpeta de Modo Guerrero si está disponible
+        last_sub = getattr(self, 'ultima_subcarpeta_guerrero', None)
+        if last_sub and last_sub in subcarpetas:
+            idx = self.combo_subcarpetas.findText(last_sub)
+            if idx >= 0:
+                self.combo_subcarpetas.blockSignals(True)
+                self.combo_subcarpetas.setCurrentIndex(idx)
+                self.combo_subcarpetas.blockSignals(False)
+
     def actualizar_ruta_desde_subcarpeta(self):
         if self.combo_subcarpetas.currentIndex() <= 0:
             self.label_ruta.setText(f"{DB_DEFAULT_PATH}")
             return
-        subcarpeta = os.path.join(self.carpeta_raiz, self.combo_subcarpetas.currentText())
+        subcarpeta_nombre = self.combo_subcarpetas.currentText()
+        subcarpeta = os.path.join(self.carpeta_raiz, subcarpeta_nombre)
         archivos_bd = [os.path.join(subcarpeta, f) for f in os.listdir(subcarpeta) if f.lower().endswith(('.mdb', '.accdb'))]
         if not archivos_bd:
             self._mostrar_mensaje("Advertencia", f"No se encontraron bases de datos en: {os.path.basename(subcarpeta)}", QMessageBox.Warning)
             return
         ruta_mas_reciente = max(archivos_bd, key=os.path.getmtime)
         self.db_path = ruta_mas_reciente
-        
+
+        # --- PERSISTIR EN CONFIGURACIÓN PARA MODO GUERRERO ---
+        self.ultima_subcarpeta_guerrero = subcarpeta_nombre
+        self.ultimo_db_path_guerrero = self.db_path
+        self.config['ultima_subcarpeta_guerrero'] = subcarpeta_nombre
+        self.config['ultimo_db_path_guerrero'] = self.db_path
+        self.guardar_configuracion()
+
         # --- RESETEAR CACHE PARA MODO GUERRERO ---
         print(f"[WARRIOR] Cambiando a BD: {self.db_path}")
         db.reset_sync_data()
         # -----------------------------------------
-        
+
         self.limpiar_todas_tablas()
         # Cargar el último username de la nueva BD seleccionada y actualizar estado
         self.actualizar_status_db()
@@ -3457,6 +3537,14 @@ class InfoplazaAnalyzer(QMainWindow):
         self.guardar_configuracion()
         # --- FIN DE LA LÓGICA ---
         
+        # Sincronizar en espejo con Informe Cuatrimestral
+        if hasattr(self, 'tab_informe_cuatrimestral') and self.tab_informe_cuatrimestral and hasattr(self.tab_informe_cuatrimestral, 'spin_pcs'):
+            if self.tab_informe_cuatrimestral.spin_pcs.value() != num_computadoras:
+                self.tab_informe_cuatrimestral.spin_pcs.blockSignals(True)
+                self.tab_informe_cuatrimestral.spin_pcs.setValue(num_computadoras)
+                self.tab_informe_cuatrimestral.spin_pcs.blockSignals(False)
+                self.tab_informe_cuatrimestral.actualizar_tarjeta_rendimiento()
+
         if not self.data.empty:
             self.mostrar_tabla_rendimiento(self.data)
             self._actualizar_grafico_rendimiento(self.data)
@@ -4591,7 +4679,7 @@ class InfoplazaAnalyzer(QMainWindow):
                 tabla_rendimiento.append(row_dict)
 
             # 3. Cargar Template y Renderizar
-            template_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'reporte_template.html')
+            template_path = get_persistent_path('reporte_template.html')
             if not os.path.exists(template_path):
                 self._mostrar_mensaje("Error", "No se encontró la plantilla HTML del reporte (reporte_template.html).", QMessageBox.Warning)
                 return
@@ -4601,7 +4689,7 @@ class InfoplazaAnalyzer(QMainWindow):
                 
             template = jinja2.Template(template_source)
             
-            logo_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'icons', 'LOGO INFOPLAZAS.png')
+            logo_path = get_persistent_path(os.path.join('icons', 'LOGO INFOPLAZAS.png'))
             logo_uri = f"file:///{logo_path.replace(os.sep, '/')}"
             
             # Recopilar datos de las metas si fue seleccionado
@@ -4708,7 +4796,8 @@ class InfoplazaAnalyzer(QMainWindow):
                 def generar_pdf():
                     try:
                         import weasyprint
-                        weasyprint.HTML(string=html_content, base_url=os.path.dirname(os.path.abspath(__file__))).write_pdf(ruta_pdf)
+                        with suprimir_stderr_glib():
+                            weasyprint.HTML(string=html_content, base_url=BASE_DIR).write_pdf(ruta_pdf)
                         
                         if self.progress_dialog:
                             self.progress_dialog.close()
@@ -4728,6 +4817,112 @@ class InfoplazaAnalyzer(QMainWindow):
         except Exception as e:
             traceback.print_exc()
             self._mostrar_mensaje("Error", f"Ha ocurrido un error al generar el PDF:\n{str(e)}", QMessageBox.Critical)
+
+    def generar_pdf_cuatrimestral(self, payload_pdf: dict):
+        """Genera el informe cuatrimestral en PDF usando Weasyprint y la plantilla HTML."""
+        try:
+            import jinja2
+            import weasyprint
+            
+            template_path = get_persistent_path('informe_cuatrimestral_template.html')
+            if not os.path.exists(template_path):
+                self._mostrar_mensaje("Error", "No se encontró la plantilla HTML del informe cuatrimestral (informe_cuatrimestral_template.html).", QMessageBox.Warning)
+                return
+
+            with open(template_path, 'r', encoding='utf-8') as f:
+                template_source = f.read()
+
+            template = jinja2.Template(template_source)
+
+            logo_path = get_persistent_path(os.path.join('icons', 'LOGO INFOPLAZAS.png'))
+            logo_uri = f"file:///{logo_path.replace(os.sep, '/')}"
+
+            html_content = template.render(
+                logo_path=logo_uri,
+                infoplaza_id=payload_pdf.get('infoplaza_id'),
+                infoplaza_info=payload_pdf.get('infoplaza_info', {}),
+                anio=payload_pdf.get('anio'),
+                cuatrimestre=payload_pdf.get('cuatrimestre'),
+                header=payload_pdf.get('header', {}),
+                capacitaciones=payload_pdf.get('capacitaciones', []),
+                totales_capacitaciones=payload_pdf.get('totales_capacitaciones', {}),
+                servicios=payload_pdf.get('servicios', []),
+                otras_actividades=payload_pdf.get('otras_actividades', []),
+                kpis_cuatrimestre=payload_pdf.get('kpis_cuatrimestre', {}),
+                visitas_mes=payload_pdf.get('visitas_mes', []),
+                rendimiento=payload_pdf.get('rendimiento', []),
+                fecha_generacion=payload_pdf.get('fecha_generacion', '')
+            )
+
+            opciones = QFileDialog.Options()
+            infoplaza_id = payload_pdf.get('infoplaza_id', '273')
+            infoplaza_info = payload_pdf.get('infoplaza_info', {})
+            nombre_raw = infoplaza_info.get('nombre') or infoplaza_info.get('infoplaza_nombre') or getattr(self, 'current_infoplaza_nombre', '') or ''
+            
+            # Limpiar el nombre de la Infoplaza para uso seguro en nombre de archivo
+            import re
+            nombre_clean = re.sub(r'[\\/*?:"<>|]', '', str(nombre_raw)).strip().replace(' ', '_')
+            if not nombre_clean:
+                nombre_clean = "Infoplaza"
+
+            anio = payload_pdf.get('anio', 2026)
+            cuat = payload_pdf.get('cuatrimestre', 1)
+
+            # Generar sello de fecha/hora formato 12h: Ej. 31Jul-0410pm
+            from datetime import datetime
+            now_dt = datetime.now()
+            meses_abr = {1: "Ene", 2: "Feb", 3: "Mar", 4: "Abr", 5: "May", 6: "Jun", 7: "Jul", 8: "Ago", 9: "Sep", 10: "Oct", 11: "Nov", 12: "Dic"}
+            dia_str = now_dt.strftime("%d")
+            mes_str = meses_abr.get(now_dt.month, now_dt.strftime("%b"))
+            hora_str = now_dt.strftime("%I%M%p").lower()
+            stamp = f"{dia_str}{mes_str}-{hora_str}"
+
+            nombre_sugerido = f"Informe_{infoplaza_id}_{nombre_clean}_C{cuat}-{anio}_{stamp}.pdf"
+            
+            ruta_pdf, _ = QFileDialog.getSaveFileName(
+                self, "Guardar Informe Cuatrimestral (PDF)", 
+                nombre_sugerido, 
+                "Archivos PDF (*.pdf);;Todos los archivos (*)", 
+                options=opciones
+            )
+
+            if ruta_pdf:
+                self.progress_dialog = ProcessingDialog(self, getattr(self, 'is_dark_mode', False))
+                self.progress_dialog.message_label.setText("Generando Informe Cuatrimestral PDF...")
+                self.progress_dialog.show()
+                QCoreApplication.processEvents()
+
+                def generar_pdf_async():
+                    try:
+                        with suprimir_stderr_glib():
+                            weasyprint.HTML(string=html_content, base_url=BASE_DIR).write_pdf(ruta_pdf)
+                        if self.progress_dialog:
+                            self.progress_dialog.close()
+                        dlg_exito = PdfExitoDialog(
+                            ruta_pdf=ruta_pdf,
+                            parent=self,
+                            is_dark_mode=getattr(self, 'is_dark_mode', False)
+                        )
+                        dlg_exito.exec_()
+                    except PermissionError:
+                        if self.progress_dialog:
+                            self.progress_dialog.close()
+                        self._mostrar_mensaje(
+                            "Archivo Bloqueado",
+                            f"No se pudo guardar el archivo porque ya está abierto en otro programa (como un lector de PDF o navegador).\n\n"
+                            f"Por favor, ciérralo o elige un nombre diferente e inténtalo de nuevo.",
+                            QMessageBox.Warning
+                        )
+                    except Exception as e_pdf:
+                        if self.progress_dialog:
+                            self.progress_dialog.close()
+                        self._mostrar_mensaje("Error", f"Ha ocurrido un error al generar el PDF:\n{str(e_pdf)}", QMessageBox.Critical)
+
+                QTimer.singleShot(100, generar_pdf_async)
+
+        except Exception as e:
+            traceback.print_exc()
+            self._mostrar_mensaje("Error", f"Ha ocurrido un error al preparar el informe PDF:\n{str(e)}", QMessageBox.Critical)
     
 
 

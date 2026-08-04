@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Informe Cuatrimestral - Infoplazas AIP</title>
+    <style>
+        @page {
+            size: A4 portrait;
+            margin: 12mm 15mm 18mm 15mm;
+            @bottom-left {
+                content: "Informe generado con ADA Nova el {{ fecha_generacion }}";
+                font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+                font-size: 8pt;
+                color: #64748b;
+                font-style: italic;
+                vertical-align: middle;
+            }
+            @bottom-right {
+                content: "Página " counter(page) " de " counter(pages);
+                font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+                font-size: 8pt;
+                color: #64748b;
+                font-weight: bold;
+                vertical-align: middle;
+            }
+        }
+        
+        body {
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            color: #1e293b;
+            margin: 0;
+            padding: 0;
+            font-size: 9.5pt;
+            line-height: 1.35;
+        }
+
+        .header-container {
+            text-align: center;
+            margin-bottom: 12px;
+        }
+
+        .logo-img {
+            max-height: 55px;
+            margin-bottom: 6px;
+        }
+
+        h1.title {
+            font-size: 14pt;
+            font-weight: bold;
+            text-transform: uppercase;
+            margin: 0 0 2px 0;
+            color: #0f172a;
+            letter-spacing: 0.5px;
+        }
+
+        h2.subtitle {
+            font-size: 11pt;
+            font-weight: normal;
+            margin: 0 0 12px 0;
+            color: #334155;
+        }
+
+        .section-title {
+            font-size: 10pt;
+            font-weight: bold;
+            color: #0f172a;
+            margin-top: 14px;
+            margin-bottom: 6px;
+        }
+
+        table.data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 10px;
+            page-break-inside: auto;
+        }
+
+        table.data-table tr {
+            page-break-inside: avoid;
+            page-break-after: auto;
+        }
+
+        table.data-table th {
+            background-color: #005d87;
+            color: #ffffff;
+            font-weight: bold;
+            font-size: 9pt;
+            padding: 5px 7px;
+            text-align: left;
+            border: 1px solid #004b6e;
+        }
+
+        table.data-table td {
+            border: 1px solid #cbd5e1;
+            padding: 4px 7px;
+            font-size: 8.5pt;
+            vertical-align: middle;
+        }
+
+        table.data-table tr:nth-child(even) td {
+            background-color: #eaf4f8;
+        }
+
+        .totals-table {
+            width: 50%;
+            margin-left: auto;
+            border-collapse: collapse;
+            margin-top: 4px;
+            margin-bottom: 12px;
+        }
+
+        .totals-table td {
+            border: 1px solid #94a3b8;
+            padding: 4px 8px;
+            font-size: 9pt;
+        }
+
+        .totals-table tr.total-header td {
+            background-color: #005d87;
+            color: #ffffff;
+            font-weight: bold;
+        }
+
+        .signatures-container {
+            margin-top: 25px;
+            width: 100%;
+            page-break-inside: avoid;
+        }
+
+        .signature-box {
+            width: 48%;
+            display: inline-block;
+            vertical-align: top;
+        }
+
+        .signature-line {
+            border-top: 1px solid #334155;
+            width: 85%;
+            margin-top: 35px;
+            margin-bottom: 4px;
+        }
+
+        .signature-label {
+            font-size: 8.5pt;
+            color: #1e293b;
+        }
+
+        .obs-box {
+            border: 1px solid #64748b;
+            padding: 8px 10px;
+            min-height: 45px;
+            font-size: 8.5pt;
+            margin-top: 6px;
+            background-color: #fafafa;
+            border-radius: 4px;
+        }
+
+        .annex-box {
+            margin-top: 15px;
+            padding: 10px;
+            border: 1px dashed #94a3b8;
+            background-color: #f8fafc;
+            border-radius: 4px;
+            font-size: 8.5pt;
+            color: #475569;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header-container">
+        {% if logo_path %}
+        <img src="{{ logo_path }}" class="logo-img" alt="Infoplazas AIP">
+        {% endif %}
+        <h1 class="title">INFORME CUATRIMESTRAL</h1>
+        <h2 class="subtitle">
+            {% if cuatrimestre == 1 %}Enero a Abril{% elif cuatrimestre == 2 %}Mayo a Agosto{% else %}Septiembre a Diciembre{% endif %} de {{ anio }}
+        </h2>
+    </div>
+
+    <!-- I. DATOS DE LA INFOPLAZA -->
+    <div class="section-title">I. Datos de la Infoplaza:</div>
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th style="width: 10%; text-align: center;">No.</th>
+                <th style="width: 30%;">Nombre</th>
+                <th style="width: 20%;">Provincia</th>
+                <th style="width: 20%;">Distrito</th>
+                <th style="width: 20%;">Corregimiento</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td style="text-align: center; font-weight: bold;">{{ infoplaza_id }}</td>
+                <td>{{ infoplaza_info.nombre or "Infoplaza " ~ infoplaza_id }}</td>
+                <td>{{ infoplaza_info.provincia or "N/A" }}</td>
+                <td>{{ infoplaza_info.distrito or "N/A" }}</td>
+                <td>{{ infoplaza_info.corregimiento or "N/A" }}</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <!-- II. CAPACITACIONES, TALLERES O CURSOS -->
+    <div class="section-title">II. Capacitaciones, talleres o cursos durante el cuatrimestre:</div>
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th style="width: 5%; text-align: center;">#</th>
+                <th style="width: 15%;">Mes</th>
+                <th style="width: 35%;">Tema</th>
+                <th style="width: 12%; text-align: center;">Participantes</th>
+                <th style="width: 10%; text-align: center;">Horas</th>
+                <th style="width: 23%;">Observaciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for cap in capacitaciones %}
+            <tr>
+                <td style="text-align: center;">{{ loop.index }}</td>
+                <td>{{ cap.mes }}</td>
+                <td style="font-weight: bold;">{{ cap.tema }}</td>
+                <td style="text-align: center;">{{ cap.participantes }}</td>
+                <td style="text-align: center;">{{ cap.horas }}</td>
+                <td>{{ cap.observaciones }}</td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="6" style="text-align: center; color: #64748b;">No se registraron capacitaciones en este cuatrimestre.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <!-- TOTALES DE CAPACITACIONES -->
+    <table class="totals-table">
+        <tr class="total-header">
+            <td colspan="2">Sumar las capacitaciones y personas beneficiadas.</td>
+        </tr>
+        <tr>
+            <td>Total de actividades de capacitación:</td>
+            <td style="font-weight: bold; text-align: right;">{{ totales_capacitaciones.total_actividades }}</td>
+        </tr>
+        <tr>
+            <td>Total de Participantes:</td>
+            <td style="font-weight: bold; text-align: right;">{{ totales_capacitaciones.total_participantes }}</td>
+        </tr>
+        <tr>
+            <td>Total de Horas:</td>
+            <td style="font-weight: bold; text-align: right;">{{ totales_capacitaciones.total_horas }}</td>
+        </tr>
+    </table>
+
+    <!-- III. SERVICIOS BRINDADOS -->
+    <div class="section-title">III. Servicios brindados en la Infoplaza a parte del Internet:</div>
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th style="width: 8%; text-align: center;">#</th>
+                <th style="width: 50%;">Tipo de servicio</th>
+                <th style="width: 42%;">Observaciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for srv in servicios %}
+            {% if srv.ofrecido %}
+            <tr>
+                <td style="text-align: center;">{{ loop.index }}</td>
+                <td style="font-weight: bold;">{{ srv.servicio_nombre }}</td>
+                <td>{{ srv.observaciones or "Disponible" }}</td>
+            </tr>
+            {% endif %}
+            {% else %}
+            <tr>
+                <td colspan="3" style="text-align: center; color: #64748b;">Servicios recurrentes estándar de Infoplaza.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <!-- IV. OTRAS ACTIVIDADES -->
+    <div class="section-title">IV. Otras actividades realizadas: <i>(que NO son capacitaciones o cursos)</i></div>
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th style="width: 8%; text-align: center;">#</th>
+                <th style="width: 45%;">Otras actividades</th>
+                <th style="width: 47%;">Observaciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for act in otras_actividades %}
+            <tr>
+                <td style="text-align: center;">{{ loop.index }}</td>
+                <td style="font-weight: bold;">{{ act.actividad }}</td>
+                <td>{{ act.observaciones }}</td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="3" style="text-align: center; color: #64748b;">No se registraron otras actividades especiales.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <!-- V. ESTADÍSTICA DE VISITAS Y RENDIMIENTO CUMPLIMIENTO -->
+    <div style="page-break-before: always; page-break-inside: avoid;">
+        <div class="section-title">V. Estadística de Visitas por Mes y Rendimiento Mensual:</div>
+
+        <!-- 4 KPIs SUPERIORES -->
+        <div style="margin-bottom: 12px;">
+            <table style="width: 100%; border: none;">
+                <tr>
+                    <td style="width: 25%; border: 1px solid #cbd5e1; background-color: #f8fafc; border-radius: 6px; padding: 6px 8px; text-align: center;">
+                        <div style="font-size: 13pt; font-weight: bold; color: #0284c7;">{{ kpis_cuatrimestre.masculino or '0' }}</div>
+                        <div style="font-size: 8pt; color: #64748b; text-transform: uppercase; font-weight: bold; margin-top: 2px;">Masculino</div>
+                    </td>
+                    <td style="width: 25%; border: 1px solid #cbd5e1; background-color: #f8fafc; border-radius: 6px; padding: 6px 8px; text-align: center;">
+                        <div style="font-size: 13pt; font-weight: bold; color: #0284c7;">{{ kpis_cuatrimestre.femenino or '0' }}</div>
+                        <div style="font-size: 8pt; color: #64748b; text-transform: uppercase; font-weight: bold; margin-top: 2px;">Femenino</div>
+                    </td>
+                    <td style="width: 25%; border: 1px solid #7dd3fc; background-color: #e0f2fe; border-radius: 6px; padding: 6px 8px; text-align: center;">
+                        <div style="font-size: 13pt; font-weight: bold; color: #0284c7;">{{ kpis_cuatrimestre.total_visitas or '0' }}</div>
+                        <div style="font-size: 8pt; color: #0284c7; text-transform: uppercase; font-weight: bold; margin-top: 2px;">TOTAL VISITAS</div>
+                    </td>
+                    <td style="width: 25%; border: 1px solid #fde68a; background-color: #fffbeb; border-radius: 6px; padding: 6px 8px; text-align: center;">
+                        <div style="font-size: 13pt; font-weight: bold; color: #d97706;">{{ kpis_cuatrimestre.cumplimiento_pct or '0.00%' }}</div>
+                        <div style="font-size: 8pt; color: #b45309; text-transform: uppercase; font-weight: bold; margin-top: 2px;">CUMPLIMIENTO 30%</div>
+                        {% if kpis_cuatrimestre.cumplimiento_sub %}
+                        <div style="font-size: 7.5pt; color: #78350f; font-weight: 600; margin-top: 1px;">{{ kpis_cuatrimestre.cumplimiento_sub }}</div>
+                        {% endif %}
+                    </td>
+                </tr>
+            </table>
+        </div>
+
+        <!-- CUADRO ESTADÍSTICO DE VISITAS POR MES -->
+        <div style="font-size: 9pt; font-weight: bold; color: #0f172a; margin-top: 8px; margin-bottom: 4px;">Resumen de Visitas por Mes:</div>
+        <table class="data-table" style="margin-bottom: 12px;">
+            <thead>
+                <tr>
+                    <th>MES</th>
+                    <th style="text-align: center;">Masculino</th>
+                    <th style="text-align: center;">Femenino</th>
+                    <th style="text-align: center;">Primaria</th>
+                    <th style="text-align: center;">Secundaria</th>
+                    <th style="text-align: center;">Universidad</th>
+                    <th style="text-align: center;">Docentes</th>
+                    <th style="text-align: center;">Tercera Edad</th>
+                    <th style="text-align: center;">Público Gral.</th>
+                    <th style="text-align: center;">TOTAL</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in visitas_mes %}
+                <tr {% if row.mes in ['TOTAL', 'TOTAL GENERAL'] %}style="background-color: #1e293b; color: #ffffff; font-weight: bold;"{% endif %}>
+                    <td style="font-weight: bold; {% if row.mes in ['TOTAL', 'TOTAL GENERAL'] %}color: #ffffff;{% endif %}">{% if row.mes == 'TOTAL GENERAL' %}TOTAL{% else %}{{ row.mes }}{% endif %}</td>
+                    <td style="text-align: center; {% if row.mes in ['TOTAL', 'TOTAL GENERAL'] %}color: #ffffff;{% endif %}">{{ row.masculino }}</td>
+                    <td style="text-align: center; {% if row.mes in ['TOTAL', 'TOTAL GENERAL'] %}color: #ffffff;{% endif %}">{{ row.femenino }}</td>
+                    <td style="text-align: center; {% if row.mes in ['TOTAL', 'TOTAL GENERAL'] %}color: #ffffff;{% endif %}">{{ row.primaria }}</td>
+                    <td style="text-align: center; {% if row.mes in ['TOTAL', 'TOTAL GENERAL'] %}color: #ffffff;{% endif %}">{{ row.secundaria }}</td>
+                    <td style="text-align: center; {% if row.mes in ['TOTAL', 'TOTAL GENERAL'] %}color: #ffffff;{% endif %}">{{ row.universitarios }}</td>
+                    <td style="text-align: center; {% if row.mes in ['TOTAL', 'TOTAL GENERAL'] %}color: #ffffff;{% endif %}">{{ row.docentes }}</td>
+                    <td style="text-align: center; {% if row.mes in ['TOTAL', 'TOTAL GENERAL'] %}color: #ffffff;{% endif %}">{{ row.tercera_edad }}</td>
+                    <td style="text-align: center; {% if row.mes in ['TOTAL', 'TOTAL GENERAL'] %}color: #ffffff;{% endif %}">{{ row.publico_general }}</td>
+                    <td style="text-align: center; font-weight: bold; {% if row.mes in ['TOTAL', 'TOTAL GENERAL'] %}color: #ffffff;{% endif %}">{{ row.total_usuarios }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <!-- CUADRO DE RENDIMIENTO Y CUMPLIMIENTO MENSUAL -->
+        <div style="font-size: 9pt; font-weight: bold; color: #0f172a; margin-top: 10px; margin-bottom: 6px; line-height: 1.5;">
+            Rendimiento Mensual vs Meta, según <span style="background-color: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; padding: 2px 8px; border-radius: 6px; font-weight: bold; font-size: 8.5pt; display: inline-block;">💻 {{ header.cant_computadoras|default(header.computadoras|default('6')) }} computadoras</span> para usuarios en la Infoplaza:
+        </div>
+        <table class="data-table" style="margin-bottom: 12px;">
+            <thead>
+                <tr>
+                    <th>MES</th>
+                    <th style="text-align: center;">Visitas Logradas</th>
+                    <th style="text-align: center;">Meta del Mes</th>
+                    <th style="text-align: center;">% Cumplimiento</th>
+                    <th style="text-align: center;">Estado</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in rendimiento %}
+                <tr {% if item.mes == 'TOTAL CUATRIMESTRE' %}style="background-color: #1e293b; color: #ffffff; font-weight: bold;"{% endif %}>
+                    <td style="font-weight: bold;">{{ item.mes }}</td>
+                    <td style="text-align: center;">{{ item.visitas }}</td>
+                    <td style="text-align: center;">{{ item.meta }}</td>
+                    <td style="text-align: center; font-weight: bold;">{{ item.porcentaje }}</td>
+                    <td style="text-align: center; font-weight: bold; color: {% if 'Cumple' in item.estado or 'CUMPLE' in item.estado %}#27ae60{% elif 'Parcial' in item.estado or 'PARCIAL' in item.estado %}#f39c12{% else %}#c0392b{% endif %};">
+                        {{ item.estado }}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <!-- OBSERVACIONES GENERALES Y FIRMAS -->
+        <div class="section-title" style="margin-top: 10px;">Observaciones Generales del Dinamizador:</div>
+        <div class="obs-box">
+            {{ header.observaciones_generales or "Sin observaciones registradas." }}
+        </div>
+
+        <div class="signatures-container">
+            <div class="signature-box">
+                <div class="signature-line"></div>
+                <div class="signature-label">
+                    <b>Firma del Asociado</b><br>
+                    <b>Nombre:</b> {{ header.asociado_nombre or "____________________________________" }}<br>
+                    <b>Cédula:</b> {{ header.asociado_cedula or "____________________________________" }}
+                </div>
+            </div>
+
+            <div class="signature-box">
+                <div class="signature-line"></div>
+                <div class="signature-label">
+                    <b>Firma del Dinamizador</b><br>
+                    <b>Nombre:</b> {{ header.dinamizador_nombre or "____________________________________" }}<br>
+                    <b>Cédula:</b> {{ header.dinamizador_cedula or "____________________________________" }}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- VI. ANEXOS -->
+    <div class="annex-box">
+        <b>VI. Anexos:</b><br>
+        <i>Esta sección es adjuntada manualmente por el Dinamizador al documento físico o digital con sus respectivas fotografías, certificados o listas de asistencia con pie de foto correspondiente.</i>
+    </div>
+
+</body>
+</html>

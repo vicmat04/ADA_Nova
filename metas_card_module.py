@@ -3298,11 +3298,15 @@ class MetasTableView(QWidget):
             QMessageBox.information(self, "Exportar", f"Archivo guardado exitosamente en:\n{path}")
 
             # Preguntar si quiere abrirlo
-            if QMessageBox.question(
-                self, "Abrir Archivo",
-                "¿Desea abrir el archivo ahora?",
-                QMessageBox.Yes | QMessageBox.No
-            ) == QMessageBox.Yes:
+            msg_box = QMessageBox(self)
+            msg_box.setWindowTitle("Abrir Archivo")
+            msg_box.setText("¿Desea abrir el archivo ahora?")
+            msg_box.setIcon(QMessageBox.Question)
+            btn_si = msg_box.addButton("Sí, abrir", QMessageBox.YesRole)
+            btn_no = msg_box.addButton("No", QMessageBox.NoRole)
+            msg_box.setDefaultButton(btn_si)
+            msg_box.exec_()
+            if msg_box.clickedButton() == btn_si:
                 QDesktopServices.openUrl(QUrl.fromLocalFile(path))
 
         except Exception as e:
