@@ -25,6 +25,7 @@ from PyQt5.QtWidgets import (
 from database_manager import db
 from cuatrimestral_supabase_manager import supabase_manager, format_title_case
 from infoplazas_tab_module import InfoplazasTabWidget
+from regionales_tab_module import RegionalesTabWidget
 
 
 DEFAULT_SERVICIOS = [
@@ -65,7 +66,7 @@ def auto_determinar_cuatrimestre() -> tuple:
 
 
 class InformeCuatrimestralPreloaderThread(QThread):
-    """Hilo para precargar los datos del informe cuatrimestral en segundo plano al iniciar la app."""
+    """Hilo para precargar los datos del informe cuatrimestral y catálogo maestro en segundo plano al iniciar la app."""
     datos_cargados = pyqtSignal(dict)
 
     def __init__(self, infoplaza_id: str, anio: int, cuatrimestre: int, parent=None):
@@ -76,6 +77,13 @@ class InformeCuatrimestralPreloaderThread(QThread):
 
     def run(self):
         try:
+            # 1. Precarga transparente en memoria RAM del catálogo maestro y sincronización de categorías
+            try:
+                supabase_manager.get_infoplazas_by_regional("")
+                supabase_manager.sincronizar_catalogo_categorias()
+            except Exception as e_supa:
+                print(f"[PRELOAD_THREAD_WARN] Error precargando Supabase en background: {e_supa}")
+
             if not self.infoplaza_id:
                 return
             data_local = db.get_informe_cuatrimestral_local(
@@ -713,6 +721,20 @@ class _CatalogoSyncWorker(QThread):
         self.sync_done.emit()
 
 
+class _GuardarCategoriaBatchWorker(QThread):
+    """Worker en background para enviar el catálogo de categorías reordenado a Supabase sin congelar la UI."""
+    def __init__(self, categorias):
+        super().__init__()
+        self.categorias = categorias
+
+    def run(self):
+        for c in self.categorias:
+            try:
+                supabase_manager.guardar_categoria_catalogo(c)
+            except Exception as e:
+                print(f"[CATALOGO_SYNC] Error enviando categoría a Supabase: {e}")
+
+
 class CatalogoCategoriasDialog(QDialog):
     """
     Modal amplio para administrar el catálogo de categorías de Capacitaciones y Actividades.
@@ -1100,11 +1122,14 @@ class CatalogoCategoriasDialog(QDialog):
 
 
     def _next_orden(self, tipo: str) -> int:
-        """Devuelve el siguiente número de orden (max actual + 1) para el tipo dado."""
+        """Devuelve el número de orden por defecto para una nueva categoría."""
         cats = db.get_catalogo_categorias_local(tipo)
         if not cats:
             return 1
-        return max(int(c.get('orden', 0)) for c in cats) + 1
+        otra_cat = next((c for c in cats if str(c.get('nombre', '')).strip().lower().startswith('otra')), None)
+        if otra_cat:
+            return int(otra_cat.get('orden', len(cats)))
+        return len(cats) + 1
 
     def _reset_form(self, tipo: str):
         """Limpia el formulario y fija el orden al siguiente disponible."""
@@ -1172,6 +1197,7 @@ class CatalogoCategoriasDialog(QDialog):
                 conn.commit()
             finally:
                 conn.close()
+            db.normalizar_ordenes_categorias_local(tipo)
         except Exception as e:
             print(f"[DB_LOCAL] Error eliminando categoría ({tipo}, {nombre}): {e}")
 
@@ -1212,16 +1238,18 @@ class CatalogoCategoriasDialog(QDialog):
             "activo": activo
         }
 
-        # 1. Guardar en SQLite Local
-        db.save_catalogo_categorias_batch_local([cat_data])
+        # 1. Guardar instantáneamente en SQLite Local con reordenamiento correlativo
+        db.save_categoria_con_reordenamiento_local(cat_data)
 
-        # 2. Intentar guardar en Supabase
-        ok_cloud, err = supabase_manager.guardar_categoria_catalogo(cat_data)
-        if not ok_cloud and err:
-            print(f"[CATALOGO_WARN] No se pudo guardar en Supabase, guardado en SQLite local: {err}")
-
-        self.cargar_datos()  # recarga primero para que _next_orden lea el estado actualizado
+        # 2. Refrescar la UI e interfaz de inmediato (respuesta al instante para el usuario)
+        self.cargar_datos()
         self._reset_form(tipo)
+
+        # 3. Disparar sincronización a Supabase en segundo plano sin congelar la ventana
+        cats_reordenadas = db.get_catalogo_categorias_local(tipo)
+        self._save_batch_worker = _GuardarCategoriaBatchWorker(cats_reordenadas)
+        self._save_batch_worker.start()
+
         QMessageBox.information(self, "Éxito", f"Categoría '{nom}' guardada correctamente.")
 
 
@@ -1356,6 +1384,17 @@ class InformeCuatrimestralWidget(QWidget):
 
         header_layout.addWidget(self.btn_pdf)
 
+        # Checkbox MODO DE PRUEBA — solo visible en modo guerrero/facilitador
+        self.chk_modo_prueba = QCheckBox("🧪 MODO DE PRUEBA")
+        self.chk_modo_prueba.setVisible(False)
+        self.chk_modo_prueba.setToolTip(
+            "Modo de capacitación: podés explorar y editar libremente.\n"
+            "Ningún cambio se guardará en local ni en la nube.\n"
+            "Al desactivar, se restaura el estado real del informe."
+        )
+        self.chk_modo_prueba.toggled.connect(self._on_modo_prueba_toggled)
+        header_layout.addWidget(self.chk_modo_prueba)
+
         main_layout.addWidget(self.header_card)
         self.actualizar_encabezado_titulo()
 
@@ -1366,37 +1405,42 @@ class InformeCuatrimestralWidget(QWidget):
 
         # Pestaña 1: Capacitaciones y Cursos
         self.tab_capacitaciones = self._crear_tab_capacitaciones()
-        self.tabs.addTab(self.tab_capacitaciones, "I. Capacitaciones y Cursos")
+        self.tabs.addTab(self.tab_capacitaciones, "I. Capacitaciones")
+        self.tabs.setTabToolTip(0, "I. Capacitaciones y Cursos")
 
         # Pestaña 2: Otras Actividades
         self.tab_actividades = self._crear_tab_actividades()
-        self.tabs.addTab(self.tab_actividades, "II. Otras Actividades")
+        self.tabs.addTab(self.tab_actividades, "II. Actividades")
+        self.tabs.setTabToolTip(1, "II. Otras Actividades")
 
         # Pestaña 3: Servicios Brindados
         self.tab_servicios = self._crear_tab_servicios()
-        self.tabs.addTab(self.tab_servicios, "III. Servicios Brindados")
+        self.tabs.addTab(self.tab_servicios, "III. Servicios")
+        self.tabs.setTabToolTip(2, "III. Servicios Brindados")
 
         # Pestaña 4: Estadística y Cumplimiento
         self.tab_rendimiento = self._crear_tab_rendimiento()
-        self.tabs.addTab(self.tab_rendimiento, "IV. Estadística y Cumplimiento")
+        self.tabs.addTab(self.tab_rendimiento, "IV. Estadísticas")
+        self.tabs.setTabToolTip(3, "IV. Estadística y Cumplimiento")
 
         # Pestaña 5: Firma y Observaciones
         self.tab_firmas = self._crear_tab_firmas()
-        self.tabs.addTab(self.tab_firmas, "V. Firma y Observaciones")
+        self.tabs.addTab(self.tab_firmas, "V. Firmas y Obs.")
+        self.tabs.setTabToolTip(4, "V. Firma y Observaciones")
 
         # Pestaña 6: Catálogo Maestro de Infoplazas (Se oculta por defecto, se muestra en Modo Guerrero)
         self.tab_infoplazas = InfoplazasTabWidget(self)
 
+        # Pestaña 7: Consolidado y Comparativa Inter-Regional (Se oculta por defecto, se muestra en Modo Guerrero)
+        self.tab_regionales = RegionalesTabWidget(self)
+
         main_layout.addWidget(self.tabs)
         self.tabs.currentChanged.connect(self._on_tab_changed)
         self.cargar_catalogos_categorias()
+        QTimer.singleShot(200, self.iniciar_precarga_background)
 
     def cargar_catalogos_categorias(self):
-        """Sincroniza con Supabase primero, actualiza local y recarga las opciones de los combos de categorías."""
-        try:
-            supabase_manager.sincronizar_catalogo_categorias()
-        except Exception as e:
-            print(f"[CATALOGO_SYNC_WARN] Error en sincronización de catálogo al cargar: {e}")
+        """Carga las opciones de los combos de categorías desde la base de datos local SQLite."""
 
         caps_cats = db.get_catalogo_categorias_local("CAPACITACION")
         acts_cats = db.get_catalogo_categorias_local("ACTIVIDAD")
@@ -1462,18 +1506,43 @@ class InformeCuatrimestralWidget(QWidget):
             self.btn_gestion_cat_cap.setVisible(activo)
         if hasattr(self, 'btn_gestion_cat_act'):
             self.btn_gestion_cat_act.setVisible(activo)
+
+        # Mostrar/ocultar checkbox de MODO DE PRUEBA
+        if hasattr(self, 'chk_modo_prueba'):
+            self.chk_modo_prueba.setVisible(activo)
+            if not activo and self.chk_modo_prueba.isChecked():
+                # Al salir del modo facilitador, desactivar modo prueba y restaurar
+                self.chk_modo_prueba.setChecked(False)
             
         # Controlar la visibilidad de la pestaña Infoplazas
         if hasattr(self, 'tab_infoplazas'):
             if activo:
                 if self.tabs.indexOf(self.tab_infoplazas) == -1:
-                    self.tabs.addTab(self.tab_infoplazas, "Catálogo Infoplazas")
+                    idx_info = self.tabs.addTab(self.tab_infoplazas, "Infoplazas")
+                    self.tabs.setTabToolTip(idx_info, "Catálogo Maestro de Infoplazas")
                     if self.main_app and hasattr(self.main_app, 'carpeta_raiz'):
                         self.tab_infoplazas.set_regional_from_path(self.main_app.carpeta_raiz)
             else:
                 idx = self.tabs.indexOf(self.tab_infoplazas)
                 if idx != -1:
                     self.tabs.removeTab(idx)
+
+        # Controlar la visibilidad de la pestaña Avance Nacional (Consolidado)
+        if hasattr(self, 'tab_regionales'):
+            if activo:
+                if self.tabs.indexOf(self.tab_regionales) == -1:
+                    idx_reg = self.tabs.addTab(self.tab_regionales, "Avance Nacional")
+                    self.tabs.setTabToolTip(idx_reg, "Consolidado y Comparativa Inter-Regional de Entregas")
+            else:
+                idx_reg = self.tabs.indexOf(self.tab_regionales)
+                if idx_reg != -1:
+                    self.tabs.removeTab(idx_reg)
+
+    def _on_modo_prueba_toggled(self, activo: bool):
+        """Al desactivar MODO DE PRUEBA, restaura el estado real desde la BD local (Opción A)."""
+        if not activo:
+            self._limpiar_interfaz_completa()
+            self.cargar_informe_actual()
 
     # =========================================================================
     # CONSTRUCCIÓN DE PESTAÑAS
@@ -1588,7 +1657,10 @@ class InformeCuatrimestralWidget(QWidget):
 
         # Formulario de Nueva Capacitación
         self.form_box_cap = QGroupBox("➕ Agregar Nueva Capacitación o Curso")
+        self.form_box_cap.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Maximum)
         form_layout = QHBoxLayout(self.form_box_cap)
+        form_layout.setContentsMargins(10, 6, 10, 6)
+        form_layout.setAlignment(Qt.AlignVCenter)
 
         self.combo_cap_mes = QComboBox()
         self.combo_cap_mes.setFixedWidth(95)
@@ -1617,11 +1689,12 @@ class InformeCuatrimestralWidget(QWidget):
         self.spin_cap_horas.setValue(2)
         self.spin_cap_horas.setFixedWidth(65)
 
-        self.txt_cap_obs = QLineEdit()
+        self.txt_cap_obs = QTextEdit()
         self.txt_cap_obs.setPlaceholderText("Observaciones / Facilitador")
-        self.txt_cap_obs.editingFinished.connect(lambda: self.txt_cap_obs.setText(format_title_case(self.txt_cap_obs.text())))
+        self.txt_cap_obs.setFixedHeight(38)
+        self.txt_cap_obs.setStyleSheet("padding: 2px 4px;")
 
-        self.btn_add_cap = QPushButton("+ Capacitación")
+        self.btn_add_cap = QPushButton("+ Agregar")
         self.btn_add_cap.setStyleSheet("background-color: #10b981; color: white; font-weight: bold; padding: 6px 12px; border-radius: 4px;")
         self.btn_add_cap.setCursor(Qt.PointingHandCursor)
         self.btn_add_cap.clicked.connect(self.agregar_capacitacion)
@@ -1759,7 +1832,7 @@ class InformeCuatrimestralWidget(QWidget):
         self.txt_act_obs.setPlaceholderText("Observaciones de la actividad")
         self.txt_act_obs.editingFinished.connect(lambda: self.txt_act_obs.setText(format_title_case(self.txt_act_obs.text())))
 
-        self.btn_add_act = QPushButton("+ Actividad")
+        self.btn_add_act = QPushButton("+ Agregar")
         self.btn_add_act.setStyleSheet("background-color: #8b5cf6; color: white; font-weight: bold; padding: 6px 12px; border-radius: 4px;")
         self.btn_add_act.setCursor(Qt.PointingHandCursor)
         self.btn_add_act.clicked.connect(self.agregar_actividad)
@@ -2004,15 +2077,14 @@ class InformeCuatrimestralWidget(QWidget):
             QTabBar::tab {{
                 font-size: 13px;
                 font-weight: bold;
-                padding: 8px 26px;
-                min-width: 190px;
+                padding: 7px 12px;
                 background-color: {tab_bg_unselected};
                 color: {text_sub};
                 border: 1px solid {tab_border};
                 border-bottom: none;
                 border-top-left-radius: 8px;
                 border-top-right-radius: 8px;
-                margin-right: 6px;
+                margin-right: 3px;
             }}
             QTabBar::tab:selected {{
                 background-color: {tab_bg_selected};
@@ -2210,6 +2282,8 @@ class InformeCuatrimestralWidget(QWidget):
         self.actualizar_tarjeta_rendimiento()
         if hasattr(self, 'tab_infoplazas') and self.tab_infoplazas:
             self.tab_infoplazas.update_theme(is_dark)
+        if hasattr(self, 'tab_regionales') and self.tab_regionales:
+            self.tab_regionales.update_theme(is_dark)
 
     # =========================================================================
     # LÓGICA DE CARGA, EVENTOS Y NAVEGACIÓN
@@ -2351,6 +2425,10 @@ class InformeCuatrimestralWidget(QWidget):
         self.actualizar_combo_meses()
         self.actualizar_encabezado_titulo()
         self.cargar_informe_actual()
+        if hasattr(self, 'tab_infoplazas') and self.tab_infoplazas:
+            self.tab_infoplazas._on_periodo_changed()
+        if hasattr(self, 'tab_regionales') and self.tab_regionales:
+            self.tab_regionales._on_periodo_changed()
 
     def on_pcs_changed(self, value: int):
         """Sincroniza la cantidad de computadoras con el Dashboard principal en tiempo real (espejo) con respuesta instantánea."""
@@ -2519,14 +2597,18 @@ class InformeCuatrimestralWidget(QWidget):
                         "otras_actividades": c_acts
                     }
                 else:
-                    # MÁSCARA / OBSERVACIÓN MODO GUERRERO (SIN CONEXIÓN CENTRAL)
-                    QMessageBox.warning(
-                        self,
-                        "Base de Datos Central",
-                        "ℹ️ No se cuenta con acceso a la base de datos central. Se utilizarán datos locales limpios."
-                    )
-                    # Disparar reseteo completo de datos locales (Ctrl + Shift + R)
-                    db.reset_sync_data()
+                    # MODO OFFLINE: sin conexión a Supabase, usar datos locales
+                    # Notificar al usuario solo UNA vez por sesión (evitar dialog duplicado)
+                    if not getattr(self, '_offline_notificado', False):
+                        self._offline_notificado = True
+                        QMessageBox.information(
+                            self,
+                            "Modo Sin Conexión",
+                            "⚠️ No hay conexión con la base de datos central.\n\n"
+                            "Se trabajará con los datos locales disponibles.\n"
+                            "Los cambios se sincronizarán cuando se recupere la conexión."
+                        )
+                    # NOTA: NO se borra el cache local — contiene los datos de Access
                     data_local = db.get_informe_cuatrimestral_local(
                         infoplaza_id=self.infoplaza_id,
                         anio=self.current_anio,
@@ -2867,7 +2949,7 @@ class InformeCuatrimestralWidget(QWidget):
         mes = self.combo_cap_mes.currentText()
         part = self.spin_cap_part.value()
         horas = self.spin_cap_horas.value()
-        obs = format_title_case(self.txt_cap_obs.text())
+        obs = format_title_case(self.txt_cap_obs.toPlainText().strip() if hasattr(self.txt_cap_obs, 'toPlainText') else self.txt_cap_obs.text().strip())
 
         caps = self.obtener_capacitaciones_de_tabla()
         
@@ -2886,13 +2968,20 @@ class InformeCuatrimestralWidget(QWidget):
             if 0 <= row < len(caps):
                 caps[row] = nuevo_dato
             self.edit_row_cap_idx = None
-            self.btn_add_cap.setText("+ Capacitación")
+            self.btn_add_cap.setText("+ Agregar")
             self.btn_add_cap.setStyleSheet("background-color: #10b981; color: white; font-weight: bold; padding: 6px 12px; border-radius: 4px;")
             self.form_box_cap.setTitle("➕ Agregar Nueva Capacitación o Curso")
             self.btn_cancelar_edit_cap.setVisible(False)
         else:
             # Modo agregar
             caps.append(nuevo_dato)
+
+        meses_orden = {
+            "enero": 1, "febrero": 2, "marzo": 3, "abril": 4,
+            "mayo": 5, "junio": 6, "julio": 7, "agosto": 8,
+            "septiembre": 9, "octubre": 10, "noviembre": 11, "diciembre": 12
+        }
+        caps.sort(key=lambda x: meses_orden.get(str(x.get("mes", "")).strip().lower(), 99))
 
         self.render_capacitaciones_tabla(caps)
 
@@ -2965,7 +3054,7 @@ class InformeCuatrimestralWidget(QWidget):
     def _cancelar_edicion_cap(self):
         """Cancela el modo edición y vuelve al modo agregar."""
         self.edit_row_cap_idx = None
-        self.btn_add_cap.setText("+ Capacitación")
+        self.btn_add_cap.setText("+ Agregar")
         self.btn_add_cap.setStyleSheet(
             "background-color: #10b981; color: white; font-weight: bold; "
             "padding: 6px 12px; border-radius: 4px;"
@@ -2978,7 +3067,7 @@ class InformeCuatrimestralWidget(QWidget):
 
 
     def _on_tab_changed(self, index: int):
-        """Al cambiar de pestaña, cancela silenciosamente cualquier edición activa."""
+        """Al cambiar de pestaña, cancela silenciosamente cualquier edición activa y sincroniza catálogo si corresponde."""
         idx_cap = self.tabs.indexOf(self.tab_capacitaciones)
         idx_act = self.tabs.indexOf(self.tab_actividades)
 
@@ -2989,6 +3078,14 @@ class InformeCuatrimestralWidget(QWidget):
         # Si salimos de la pestaña de Actividades y hay edición activa → cancelar
         if index != idx_act and getattr(self, 'edit_row_act_idx', None) is not None:
             self._cancelar_edicion_act()
+
+        # Si entramos a la pestaña de Catálogo de Infoplazas → sincronizar período actual
+        if hasattr(self, 'tab_infoplazas') and self.tab_infoplazas and index == self.tabs.indexOf(self.tab_infoplazas):
+            self.tab_infoplazas._on_periodo_changed()
+
+        # Si entramos a la pestaña de Consolidado Regional → sincronizar período actual
+        if hasattr(self, 'tab_regionales') and self.tab_regionales and index == self.tabs.indexOf(self.tab_regionales):
+            self.tab_regionales._on_periodo_changed()
 
 
     def eliminar_capacitacion(self, row_idx: int):
@@ -3464,7 +3561,7 @@ class InformeCuatrimestralWidget(QWidget):
             if 0 <= row < len(acts):
                 acts[row] = nuevo_dato
             self.edit_row_act_idx = None
-            self.btn_add_act.setText("+ Actividad")
+            self.btn_add_act.setText("+ Agregar")
             self.btn_add_act.setStyleSheet("background-color: #8b5cf6; color: white; font-weight: bold; padding: 6px 12px; border-radius: 4px;")
             self.form_box_act.setTitle("➕ Agregar Nueva Actividad Especial")
             self.btn_cancelar_edit_act.setVisible(False)
@@ -3530,7 +3627,7 @@ class InformeCuatrimestralWidget(QWidget):
     def _cancelar_edicion_act(self):
         """Cancela el modo edición y vuelve al modo agregar."""
         self.edit_row_act_idx = None
-        self.btn_add_act.setText("+ Actividad")
+        self.btn_add_act.setText("+ Agregar")
         self.btn_add_act.setStyleSheet(
             "background-color: #8b5cf6; color: white; font-weight: bold; "
             "padding: 6px 12px; border-radius: 4px;"
@@ -3579,19 +3676,18 @@ class InformeCuatrimestralWidget(QWidget):
     # --- PRECARGA Y ESTADÍSTICA DE VISITAS ---
 
     def iniciar_precarga_background(self):
-        """Inicia la precarga silenciosa de datos en segundo plano si la Infoplaza ya está detectada."""
+        """Inicia la precarga silenciosa de datos en segundo plano y precalienta el catálogo de Infoplazas."""
         if not self.infoplaza_id:
             self.cargar_datos_infoplaza()
         
-        if self.infoplaza_id:
-            self.preloader_thread = InformeCuatrimestralPreloaderThread(
-                infoplaza_id=self.infoplaza_id,
-                anio=self.current_anio,
-                cuatrimestre=self.current_cuatrimestre,
-                parent=self
-            )
-            self.preloader_thread.datos_cargados.connect(self._on_precarga_completada)
-            self.preloader_thread.start()
+        self.preloader_thread = InformeCuatrimestralPreloaderThread(
+            infoplaza_id=self.infoplaza_id or "",
+            anio=self.current_anio,
+            cuatrimestre=self.current_cuatrimestre,
+            parent=self
+        )
+        self.preloader_thread.datos_cargados.connect(self._on_precarga_completada)
+        self.preloader_thread.start()
 
     def _on_precarga_completada(self, data_local: dict):
         """Aplica los datos precargados en el hilo principal sin bloqueos."""
@@ -3615,6 +3711,8 @@ class InformeCuatrimestralWidget(QWidget):
 
         self.actualizar_cuadro_visitas()
         self.actualizar_tarjeta_rendimiento()
+        # Recargar los catálogos en caso de que el hilo en background haya traído nuevas categorías
+        self.cargar_catalogos_categorias()
 
     def _obtener_dataframe_visitas(self) -> Optional[Any]:
         """
@@ -3921,6 +4019,10 @@ class InformeCuatrimestralWidget(QWidget):
             return
 
         if getattr(self, '_is_pulling_from_cloud', False):
+            return
+
+        # 🧪 MODO DE PRUEBA: bloquear todo guardado (local y cloud)
+        if getattr(self, 'chk_modo_prueba', None) and self.chk_modo_prueba.isChecked():
             return
 
         hdr, caps, srvs, acts = self._recopilar_payload_completo()

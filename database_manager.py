@@ -201,6 +201,19 @@ class DatabaseManager:
                 orden INTEGER DEFAULT 0,
                 UNIQUE(tipo, nombre)
             );
+            """,
+
+            # 11. Control de Entrega de Informes Cuatrimestrales (SQLite Local)
+            """
+            CREATE TABLE IF NOT EXISTS control_entrega_informes (
+                infoplaza_numero INTEGER NOT NULL,
+                anio INTEGER NOT NULL,
+                cuatrimestre INTEGER NOT NULL,
+                estado TEXT DEFAULT 'Pendiente',
+                motivo TEXT DEFAULT '',
+                updated_at TEXT,
+                PRIMARY KEY (infoplaza_numero, anio, cuatrimestre)
+            );
             """
         ]
         
@@ -407,18 +420,27 @@ class DatabaseManager:
             rows = self.execute_query("SELECT * FROM catalogo_categorias WHERE tipo = ? ORDER BY orden ASC, nombre ASC", (tipo,))
         else:
             rows = self.execute_query("SELECT * FROM catalogo_categorias ORDER BY tipo ASC, orden ASC, nombre ASC")
-        return [dict(r) for r in rows]
+        cats = [dict(r) for r in rows]
+
+        def _sort_key(c):
+            nombre = str(c.get('nombre', '')).strip().lower()
+            es_otra = 1 if (nombre == 'otra' or nombre == 'otras' or nombre.startswith('otra') or nombre.startswith('otras')) else 0
+            return (es_otra, int(c.get('orden', 0)), nombre)
+
+        return sorted(cats, key=_sort_key)
 
     def save_catalogo_categorias_batch_local(self, categorias: List[Dict[str, Any]]) -> bool:
         """Guarda/actualiza un lote de categorías en la BD local SQLite haciendo UPSERT por (tipo, nombre)."""
         conn = self.get_connection()
         try:
+            tipos_afectados = set()
             for cat in categorias:
                 tipo     = cat.get('tipo', 'CAPACITACION')
                 nombre   = str(cat.get('nombre', '')).strip()
                 desc     = str(cat.get('descripcion', '')).strip()
                 activo   = 1 if cat.get('activo', True) else 0
                 orden    = int(cat.get('orden', 0))
+                tipos_afectados.add(tipo)
 
                 conn.execute("""
                     INSERT INTO catalogo_categorias (tipo, nombre, descripcion, activo, orden)
@@ -430,13 +452,144 @@ class DatabaseManager:
                 """, (tipo, nombre, desc, activo, orden))
 
             conn.commit()
+            conn.close()
+
+            for t in tipos_afectados:
+                self.normalizar_ordenes_categorias_local(t)
             return True
         except Exception as e:
             print(f"[DB_LOCAL] Error guardando catálogo local: {e}")
             conn.rollback()
+            conn.close()
+            return False
+
+    def normalizar_ordenes_categorias_local(self, tipo: str):
+        """
+        Reordena de forma correlativa (1, 2, 3...) las categorías de un tipo.
+        Cualquier categoría 'Otra' / 'Otras' siempre se coloca al final (con el número de orden mayor).
+        """
+        rows = self.execute_query(
+            "SELECT * FROM catalogo_categorias WHERE tipo = ? ORDER BY orden ASC, id ASC",
+            (tipo,)
+        )
+        if not rows:
+            return
+
+        cats = [dict(r) for r in rows]
+        normales = []
+        otras = []
+        for c in cats:
+            nombre = str(c.get('nombre', '')).strip().lower()
+            if nombre == 'otra' or nombre == 'otras' or nombre.startswith('otra') or nombre.startswith('otras'):
+                otras.append(c)
+            else:
+                normales.append(c)
+
+        normales.sort(key=lambda x: (int(x.get('orden', 0)), str(x.get('nombre', '')).lower()))
+
+        conn = self.get_connection()
+        try:
+            for idx, c in enumerate(normales, start=1):
+                conn.execute(
+                    "UPDATE catalogo_categorias SET orden = ? WHERE id = ?",
+                    (idx, c['id'])
+                )
+            for idx, c in enumerate(otras, start=len(normales) + 1):
+                conn.execute(
+                    "UPDATE catalogo_categorias SET orden = ? WHERE id = ?",
+                    (idx, c['id'])
+                )
+            conn.commit()
+        except Exception as e:
+            print(f"[DB_LOCAL] Error normalizando ordenes de {tipo}: {e}")
+            conn.rollback()
+        finally:
+            conn.close()
+
+    def save_categoria_con_reordenamiento_local(self, cat: Dict[str, Any]) -> bool:
+        """
+        Guarda o actualiza una categoría ajustando el orden de las demás:
+        - Si se asigna un orden X, desplaza hacia adelante (orden + 1) las existentes con orden >= X.
+        - La opción 'Otra' / 'Otras' siempre termina de última con el orden más alto.
+        """
+        tipo = cat.get('tipo', 'CAPACITACION')
+        nombre = str(cat.get('nombre', '')).strip()
+        desc = str(cat.get('descripcion', '')).strip()
+        activo = 1 if cat.get('activo', True) else 0
+        target_orden = int(cat.get('orden', 1))
+
+        conn = self.get_connection()
+        try:
+            # Desplazar +1 las categorías normales existentes con orden >= target_orden
+            conn.execute("""
+                UPDATE catalogo_categorias
+                SET orden = orden + 1
+                WHERE tipo = ?
+                  AND orden >= ?
+                  AND nombre != ?
+                  AND LOWER(nombre) NOT LIKE 'otra%'
+            """, (tipo, target_orden, nombre))
+
+            conn.execute("""
+                INSERT INTO catalogo_categorias (tipo, nombre, descripcion, activo, orden)
+                VALUES (?, ?, ?, ?, ?)
+                ON CONFLICT(tipo, nombre) DO UPDATE SET
+                    descripcion = excluded.descripcion,
+                    activo      = excluded.activo,
+                    orden       = excluded.orden
+            """, (tipo, nombre, desc, activo, target_orden))
+
+            conn.commit()
+        except Exception as e:
+            print(f"[DB_LOCAL] Error guardando categoría con reordenamiento: {e}")
+            conn.rollback()
             return False
         finally:
             conn.close()
+
+        # Normalizar para garantizar ordenes 1..N correlativos y 'Otra' como N
+        self.normalizar_ordenes_categorias_local(tipo)
+        return True
+
+    # =========================================================================
+    # CONTROL DE ENTREGA DE INFORMES CUATRIMESTRALES
+    # =========================================================================
+
+    def get_control_entrega_local(self, anio: int, cuatrimestre: int) -> Dict[int, Dict[str, str]]:
+        """Recupera el mapa de control de entrega {numero: {'estado': ..., 'motivo': ...}} para el período."""
+        rows = self.execute_query(
+            "SELECT infoplaza_numero, estado, motivo FROM control_entrega_informes WHERE anio = ? AND cuatrimestre = ?",
+            (int(anio), int(cuatrimestre))
+        )
+        result = {}
+        for r in rows:
+            result[int(r['infoplaza_numero'])] = {
+                'estado': r['estado'] or 'Pendiente',
+                'motivo': r['motivo'] or ''
+            }
+        return result
+
+    def save_control_entrega_local(self, infoplaza_numero: int, anio: int, cuatrimestre: int, estado: str, motivo: str = "") -> bool:
+        """Guarda o actualiza el estatus y motivo de entrega de una infoplaza localmente."""
+        conn = self.get_connection()
+        try:
+            conn.execute("""
+                INSERT INTO control_entrega_informes (infoplaza_numero, anio, cuatrimestre, estado, motivo, updated_at)
+                VALUES (?, ?, ?, ?, ?, datetime('now', 'localtime'))
+                ON CONFLICT(infoplaza_numero, anio, cuatrimestre) DO UPDATE SET
+                    estado = excluded.estado,
+                    motivo = excluded.motivo,
+                    updated_at = excluded.updated_at
+            """, (int(infoplaza_numero), int(anio), int(cuatrimestre), str(estado).strip(), str(motivo).strip()))
+            conn.commit()
+            return True
+        except Exception as e:
+            print(f"[DB_LOCAL] Error guardando control de entrega: {e}")
+            conn.rollback()
+            return False
+        finally:
+            conn.close()
+
 
 
     def _migrar_id_access(self):

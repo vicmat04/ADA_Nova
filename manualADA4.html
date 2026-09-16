@@ -766,6 +766,25 @@
                     </a>
                 </div>
 
+                <!-- ERROR 1.B: CORRUPCIÓN DE .NET FRAMEWORK -->
+                <div
+                    style="border-left: 6px solid var(--danger); padding:2rem; background:#fef2f2; border-radius:16px; margin-bottom: 2rem;">
+                    <h3><i class="fas fa-exclamation-circle" style="color: var(--danger);"></i> Error: "System.EnterpriseServices / Manifiesto de ensamblado / BadImageFormatException"</h3>
+                    <p style="margin: 1rem 0;">Aparece una advertencia de sincronización indicando un error en <code>System.EnterpriseServices</code> o <i>"se esperaba que el módulo tuviera un manifiesto de ensamblado"</i>.</p>
+                    <p><b>Causa:</b> La librería de 32 bits de .NET Framework en Windows está dañada o en 0 KB por un fallo del sistema o corte de luz.</p>
+                    <div class="procedure-box" style="background: white; padding: 1.5rem;">
+                        <ul style="margin-left: 1.5rem; list-style: disc; margin-top: 0;">
+                            <li style="margin-bottom: 0.5rem;"><b>Solución 1 (Reemplazo Manual de DLL - Más Rápida):</b> Copie el archivo <code>System.EnterpriseServices.dll</code> (pesa ~236 KB) desde una PC sana (ubicado en <code>C:\Windows\Microsoft.NET\Framework\v4.0.30319\</code>) y reemplácelo en la PC dañada en esa misma carpeta y en <code>C:\Windows\Microsoft.NET\assembly\GAC_32\System.EnterpriseServices\v4.0_4.0.0.0__b03f5f7f11d50a3a\</code>.</li>
+                            <li style="margin-bottom: 0.5rem;"><b>Solución 2 (Herramienta Oficial):</b> Descargue e instale la herramienta oficial <b>Microsoft .NET Framework Repair Tool</b> (<code>NetFxRepairTool.exe</code>) para reinstalar las DLLs automáticamente.</li>
+                            <li><b>Solución 3:</b> En CMD como Administrador ejecute <code>sfc /scannow</code> para escanear y reparar componentes del sistema.</li>
+                        </ul>
+                    </div>
+                    <a href="https://www.microsoft.com/en-us/download/details.aspx?id=30135" class="btn-action"
+                        target="_blank" style="margin-top: 1rem;">
+                        Descargar .NET Repair Tool <i class="fas fa-download"></i>
+                    </a>
+                </div>
+
                 <!-- ERROR 2: BASE DE DATOS NO ENCONTRADA -->
                 <div
                     style="border-left: 6px solid var(--warning); padding:2rem; background:#fffbeb; border-radius:16px; margin-bottom: 3rem;">

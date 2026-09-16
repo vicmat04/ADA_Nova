@@ -44,7 +44,7 @@ exe = EXE(
     splash,
     splash.binaries,
     [],
-    name='ADA_Driverless_4.0.4.8',
+    name='ADA Nova 4.0.4.8 - Modo Test Guerrero',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,

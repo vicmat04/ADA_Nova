@@ -11,10 +11,20 @@ Proporciona:
 import json
 import urllib.request
 import urllib.parse
+from datetime import datetime
 from typing import Dict, List, Any, Optional, Tuple
 
 # Las credenciales de Supabase ahora se cargan desde supabase_credentials.json
 # para evitar exponer la clave service_role en el código fuente.
+
+
+def _normalize_text(val: Optional[str]) -> str:
+    """Normaliza texto removiendo tildes y pasando a mayúsculas para comparaciones insensibles a acentos."""
+    if not val:
+        return ""
+    import unicodedata
+    s = unicodedata.normalize('NFKD', str(val))
+    return "".join(c for c in s if not unicodedata.combining(c)).strip().upper()
 
 
 def format_title_case(val: Optional[str]) -> str:
@@ -56,6 +66,7 @@ class CuatrimestralSupabaseManager:
                 
         self.url = (url or "").rstrip('/')
         self.key = key or ""
+        self._infoplazas_cache: Optional[List[Dict[str, Any]]] = None
         
     def _headers(self, prefer: Optional[str] = None) -> Dict[str, str]:
         headers = {
@@ -101,23 +112,57 @@ class CuatrimestralSupabaseManager:
             return res[0], None
         return None, f"Infoplaza #{numero} no encontrada en Supabase"
 
-    def get_infoplazas_by_regional(self, regional: str) -> Tuple[List[Dict[str, Any]], Optional[str]]:
-        """Obtiene la lista de Infoplazas para una regional específica (o todas si regional='')."""
-        if regional:
-            # Si se pasa regional, filtramos por esa regional
-            # Usamos quote por si hay espacios o tildes en el nombre
-            reg_url = urllib.parse.quote(regional)
-            endpoint = f"infoplazas?regional=eq.{reg_url}&select=*&order=numero.asc"
-        else:
-            # Si no, traemos todas
+    def invalidate_infoplazas_cache(self):
+        """Invalida la caché en memoria del catálogo de infoplazas."""
+        self._infoplazas_cache = None
+
+    def get_infoplazas_by_regional(self, regional: str = "", force_refresh: bool = False) -> Tuple[List[Dict[str, Any]], Optional[str]]:
+        """
+        Obtiene la lista de Infoplazas para una regional específica (o todas si regional='').
+        Utiliza caché en memoria (RAM) para responder en 0 ms en cambios de pestaña o filtros.
+        Aplica comparación normalizada e insensible a tildes (ej: Chiriqui == Chiriquí).
+        """
+        # 1. Si no hay caché o se fuerza recarga, descargamos todo el catálogo maestro una sola vez
+        if self._infoplazas_cache is None or force_refresh:
             endpoint = "infoplazas?select=*&order=numero.asc"
-            
-        res, err = self._request(endpoint, method="GET")
-        if err:
-            return [], err
-        if res and isinstance(res, list):
-            return res, None
-        return [], "No se encontraron infoplazas"
+            res, err = self._request(endpoint, method="GET")
+            if err:
+                if self._infoplazas_cache is not None:
+                    res = self._infoplazas_cache
+                else:
+                    return [], err
+            else:
+                if isinstance(res, list):
+                    self._infoplazas_cache = res
+                else:
+                    self._infoplazas_cache = []
+
+        # 2. Filtrado instantáneo en memoria (0 ms, 0 llamadas de red)
+        all_data = self._infoplazas_cache or []
+        if regional and regional.strip():
+            reg_clean = _normalize_text(regional)
+            # Manejo especial para Azuero / Los Santos / Herrera
+            if reg_clean == "AZUERO":
+                filtered = [
+                    ip for ip in all_data
+                    if _normalize_text(ip.get('regional')) in ("LOS SANTOS", "HERRERA", "AZUERO")
+                    or _normalize_text(ip.get('provincia')) in ("LOS SANTOS", "HERRERA")
+                ]
+            else:
+                filtered = [
+                    ip for ip in all_data 
+                    if _normalize_text(ip.get('regional')) == reg_clean
+                    or _normalize_text(ip.get('provincia')) == reg_clean
+                ]
+                # Fallback por contención si no hubo match exacto
+                if not filtered:
+                    filtered = [
+                        ip for ip in all_data
+                        if reg_clean in _normalize_text(ip.get('regional'))
+                        or reg_clean in _normalize_text(ip.get('provincia'))
+                    ]
+            return list(filtered), None
+        return list(all_data), None
 
     def update_infoplaza_master(
         self,
@@ -136,6 +181,11 @@ class CuatrimestralSupabaseManager:
         res, err = self._request(endpoint, method="PATCH", data=data)
         if err:
             return False, err
+        if self._infoplazas_cache:
+            for ip in self._infoplazas_cache:
+                if ip.get('numero') == numero:
+                    ip.update(data)
+                    break
         return True, None
 
     def update_infoplaza_config(
@@ -159,6 +209,11 @@ class CuatrimestralSupabaseManager:
         res, err = self._request(endpoint, method="PATCH", data=data, prefer="return=minimal")
         if err:
             return False, err
+        if self._infoplazas_cache:
+            for ip in self._infoplazas_cache:
+                if ip.get('numero') == numero:
+                    ip.update(data)
+                    break
         return True, None
 
     # =========================================================================
@@ -416,6 +471,62 @@ class CuatrimestralSupabaseManager:
             "servicios": servicios,
             "otras_actividades": otras_actividades
         }, None
+
+    # =========================================================================
+    # CONTROL DE ENTREGA DE INFORMES CUATRIMESTRALES (SINCRONIZACIÓN SUPABASE)
+    # =========================================================================
+
+    def pull_control_entrega(self, anio: int, cuatrimestre: int) -> Tuple[Dict[int, Dict[str, str]], Optional[str]]:
+        """
+        Descarga los registros de control de entrega de todas las Infoplazas para un año y cuatrimestre desde Supabase.
+        Retorna {infoplaza_numero: {'estado': estado, 'motivo': motivo, 'updated_at': updated_at}}.
+        """
+        endpoint = f"control_entrega_informes?anio=eq.{anio}&cuatrimestre=eq.{cuatrimestre}&select=infoplaza_numero,estado,motivo,updated_at"
+        res, err = self._request(endpoint, method="GET")
+        if err:
+            return {}, err
+        data_map = {}
+        if res and isinstance(res, list):
+            for row in res:
+                num = row.get('infoplaza_numero')
+                if num is not None:
+                    data_map[int(num)] = {
+                        'estado': row.get('estado', 'Pendiente'),
+                        'motivo': row.get('motivo', '') or '',
+                        'updated_at': row.get('updated_at', '')
+                    }
+        return data_map, None
+
+    def push_control_entrega(
+        self,
+        infoplaza_numero: int,
+        anio: int,
+        cuatrimestre: int,
+        estado: str,
+        motivo: str = ""
+    ) -> Tuple[bool, Optional[str]]:
+        """
+        Guarda / actualiza el estado y motivo de entrega de una Infoplaza en Supabase (upsert en control_entrega_informes).
+        """
+        now_iso = datetime.now().isoformat()
+        payload = {
+            "infoplaza_numero": int(infoplaza_numero),
+            "anio": int(anio),
+            "cuatrimestre": int(cuatrimestre),
+            "estado": str(estado),
+            "motivo": str(motivo).strip(),
+            "updated_at": now_iso
+        }
+        endpoint = "control_entrega_informes?on_conflict=infoplaza_numero,anio,cuatrimestre"
+        _, err = self._request(
+            endpoint,
+            method="POST",
+            data=payload,
+            prefer="return=minimal,resolution=merge-duplicates"
+        )
+        if err:
+            return False, err
+        return True, None
 
 # Instancia global por defecto
 supabase_manager = CuatrimestralSupabaseManager()
