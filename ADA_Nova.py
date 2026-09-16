@@ -1618,6 +1618,8 @@ class Sidebar(QWidget):
     def toggle_warrior(self, active):
         self.warrior_container.setVisible(active)
         self.btn_cuadro_metas.setVisible(active)
+        if hasattr(self, 'btn_estadisticas'):
+            self.btn_estadisticas.setVisible(active)
 
     def _mostrar_warrior_help(self):
         """Muestra el popup de atajos posicionado al lado del botón ?"""
@@ -3316,10 +3318,6 @@ class InfoplazaAnalyzer(QMainWindow):
             self.btn_exportar_pdf.setVisible(self.modo_guerrero_activo)
             tiene_datos = getattr(self, 'data', None) is not None
             self.btn_exportar_pdf.setEnabled(tiene_datos)
-
-        if hasattr(self, 'btn_estadisticas'):
-            self.btn_estadisticas.setVisible(self.modo_guerrero_activo)
-
     
     # Los métodos _get_light_theme_stylesheet y _get_dark_theme_stylesheet han sido removidos 
     # en favor de ada_nova.qss cargado vía self.load_stylesheet()
