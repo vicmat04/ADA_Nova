@@ -191,12 +191,12 @@ class EstadisticasCuatrimestralesWidget(QWidget):
 
         # --- KPIs ---
         kpi_layout = QHBoxLayout()
-        self.lbl_kpi_participantes = self._crear_kpi_card("Participantes (Total)", "0")
-        self.lbl_kpi_horas = self._crear_kpi_card("Horas de Capacitación", "0")
-        self.lbl_kpi_entregas = self._crear_kpi_card("Cumplimiento Entregas", "0%")
-        kpi_layout.addWidget(self.lbl_kpi_participantes.parentWidget())
-        kpi_layout.addWidget(self.lbl_kpi_horas.parentWidget())
-        kpi_layout.addWidget(self.lbl_kpi_entregas.parentWidget())
+        card1, self.lbl_kpi_participantes = self._crear_kpi_card("Participantes (Total)", "0")
+        card2, self.lbl_kpi_horas = self._crear_kpi_card("Horas de Capacitación", "0")
+        card3, self.lbl_kpi_entregas = self._crear_kpi_card("Cumplimiento Entregas", "0%")
+        kpi_layout.addWidget(card1)
+        kpi_layout.addWidget(card2)
+        kpi_layout.addWidget(card3)
         self.main_layout.addLayout(kpi_layout)
 
         # --- GRÁFICOS ---
@@ -240,7 +240,7 @@ class EstadisticasCuatrimestralesWidget(QWidget):
         v.setAlignment(Qt.AlignCenter)
         l.addWidget(t)
         l.addWidget(v)
-        return v
+        return card, v
 
     def _aplicar_estilo_figura(self, fig):
         if self.is_dark_mode:
