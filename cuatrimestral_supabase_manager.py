@@ -528,5 +528,33 @@ class CuatrimestralSupabaseManager:
             return False, err
         return True, None
 
+    # =========================================================================
+    # ESTADÍSTICAS MASIVAS (DASHBOARD)
+    # =========================================================================
+
+    def get_all_capacitaciones(self, anio: int, cuatrimestre: int) -> Tuple[List[Dict[str, Any]], Optional[str]]:
+        """Descarga todas las capacitaciones de un cuatrimestre a nivel nacional."""
+        endpoint = f"informe_capacitaciones?anio=eq.{anio}&cuatrimestre=eq.{cuatrimestre}"
+        res, err = self._request(endpoint, method="GET")
+        if err:
+            return [], err
+        return res if isinstance(res, list) else [], None
+
+    def get_all_servicios(self, anio: int, cuatrimestre: int) -> Tuple[List[Dict[str, Any]], Optional[str]]:
+        """Descarga todos los servicios de un cuatrimestre a nivel nacional."""
+        endpoint = f"informe_servicios?anio=eq.{anio}&cuatrimestre=eq.{cuatrimestre}"
+        res, err = self._request(endpoint, method="GET")
+        if err:
+            return [], err
+        return res if isinstance(res, list) else [], None
+
+    def get_all_otras_actividades(self, anio: int, cuatrimestre: int) -> Tuple[List[Dict[str, Any]], Optional[str]]:
+        """Descarga todas las otras actividades de un cuatrimestre a nivel nacional."""
+        endpoint = f"informe_otras_actividades?anio=eq.{anio}&cuatrimestre=eq.{cuatrimestre}"
+        res, err = self._request(endpoint, method="GET")
+        if err:
+            return [], err
+        return res if isinstance(res, list) else [], None
+
 # Instancia global por defecto
 supabase_manager = CuatrimestralSupabaseManager()

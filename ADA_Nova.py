@@ -90,6 +90,7 @@ import subprocess # Para ejecutar el script .bat
 from facebook_module import FacebookAnalyzerWidget
 from metas_card_module import MetasCardWidget, MetasTableView
 from informe_cuatrimestral_module import InformeCuatrimestralWidget, PdfExitoDialog
+from estadisticas_cuatrimestrales_module import EstadisticasCuatrimestralesWidget, PasswordDialog
 from infoplazas_tab_module import InfoplazasTabWidget
 from novedades_manager import NovedadesManager
 from novedades_ui import NovedadesWindow, SingleEventWindow
@@ -1414,11 +1415,16 @@ class Sidebar(QWidget):
         # Informe Cuatrimestral
         self.btn_informe_cuatrimestral = self.create_nav_button("Informe Cuatrimestral", QStyle.SP_FileDialogContentsView, 4)
 
+        # Estadísticas Cuatrimestrales
+        self.btn_estadisticas = self.create_nav_button("Estadísticas", QStyle.SP_FileDialogDetailedView, 5)
+        self.btn_estadisticas.setVisible(False) # Solo visible en modo facilitador
+
         layout.addWidget(self.btn_visitas)
         layout.addWidget(self.btn_facebook)
         layout.addWidget(self.btn_metas)
         layout.addWidget(self.btn_cuadro_metas)
         layout.addWidget(self.btn_informe_cuatrimestral)
+        layout.addWidget(self.btn_estadisticas)
         
         # Ocultamos Cuadro de Metas por defecto
         self.btn_cuadro_metas.setVisible(False)
@@ -1578,6 +1584,14 @@ class Sidebar(QWidget):
         return btn
 
     def on_nav_clicked(self, btn):
+        # Si es Estadísticas, pedimos contraseña primero
+        if getattr(self, 'btn_estadisticas', None) and btn == self.btn_estadisticas:
+            from estadisticas_cuatrimestrales_module import PasswordDialog
+            dialog = PasswordDialog(self.main_app, getattr(self.main_app, 'is_dark_mode', False))
+            if dialog.exec_() != QDialog.Accepted or not dialog.clave_valida:
+                # Si falla o cancela, no cambiamos de página
+                return
+
         # Actualizamos propiedad 'active' para estilo solo en el seleccionado
         for button in self.nav_group.buttons():
             button.setProperty("active", "false")
@@ -2620,6 +2634,10 @@ class InfoplazaAnalyzer(QMainWindow):
         self.tab_informe_cuatrimestral.pdf_requested.connect(self.generar_pdf_cuatrimestral)
         self.pages_widget.addWidget(self.tab_informe_cuatrimestral)
 
+        # --- Pestaña 6: Estadísticas Cuatrimestrales ---
+        self.tab_estadisticas = EstadisticasCuatrimestralesWidget(main_window=self, is_dark_mode=getattr(self, 'is_dark_mode', False))
+        self.pages_widget.addWidget(self.tab_estadisticas)
+
         # --- Footer Global ---
         content_layout.addLayout(self._crear_footer())
 
@@ -3298,6 +3316,9 @@ class InfoplazaAnalyzer(QMainWindow):
             self.btn_exportar_pdf.setVisible(self.modo_guerrero_activo)
             tiene_datos = getattr(self, 'data', None) is not None
             self.btn_exportar_pdf.setEnabled(tiene_datos)
+
+        if hasattr(self, 'btn_estadisticas'):
+            self.btn_estadisticas.setVisible(self.modo_guerrero_activo)
 
     
     # Los métodos _get_light_theme_stylesheet y _get_dark_theme_stylesheet han sido removidos 
