@@ -1618,8 +1618,13 @@ class Sidebar(QWidget):
     def toggle_warrior(self, active):
         self.warrior_container.setVisible(active)
         self.btn_cuadro_metas.setVisible(active)
+        
+        # [OCULTO HASTA SEGUNDA ORDEN]
+        # El usuario ha solicitado ocultar el módulo de Estadísticas Cuatrimestrales.
+        # Contraseña del módulo: Guerrero2026
+        # NO SUBIR A MAIN.
         if hasattr(self, 'btn_estadisticas'):
-            self.btn_estadisticas.setVisible(active)
+            self.btn_estadisticas.setVisible(False)
 
     def _mostrar_warrior_help(self):
         """Muestra el popup de atajos posicionado al lado del botón ?"""
