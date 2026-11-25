@@ -106,6 +106,13 @@ Si recibe un error al intentar analizar, es porque su Windows no puede leer arch
 2.  Instale el archivo `accessdatabaseengine_X64.exe`.
 3.  **Reinicie la computadora obligatoriamente.**
 
+#### 1.1 Error de Ensamblado o DLL Corrupta (.NET / System.EnterpriseServices)
+Si al sincronizar o analizar aparece una advertencia referente a `System.EnterpriseServices` o `"Se esperaba que el módulo tuviera un manifiesto de ensamblado"` (`System.BadImageFormatException`):
+*   **Causa:** La librería de 32 bits de .NET Framework (`System.EnterpriseServices.dll`) en Windows se dañó o quedó en 0 bytes debido a un corte de energía o fallo en actualizaciones.
+*   **Solución A (Reemplazo Manual - Más Rápida):** Copie el archivo limpio `System.EnterpriseServices.dll` (pesa ~236 KB) desde una PC sana con Windows (ubicado en `C:\Windows\Microsoft.NET\Framework\v4.0.30319\`) y reemplácelo en la PC dañada en `C:\Windows\Microsoft.NET\Framework\v4.0.30319\` y en `C:\Windows\Microsoft.NET\assembly\GAC_32\System.EnterpriseServices\v4.0_4.0.0.0__b03f5f7f11d50a3a\`.
+*   **Solución B (Herramienta Oficial .NET):** Descargue e instale [Microsoft .NET Framework Repair Tool (`NetFxRepairTool.exe`)](https://www.microsoft.com/en-us/download/details.aspx?id=30135) y ejecútela como Administrador.
+*   **Solución C (Examen de Archivos Windows):** En CMD como Administrador ejecute `sfc /scannow` para que Windows intente reparar los archivos del sistema.
+
 #### 2. Base de Datos No Encontrada
 ADA no localiza el archivo `oneroofccp.mdb`.
 *   **Síntoma:** El panel superior muestra **"❌ DESCONECTADO"** en color rojo.

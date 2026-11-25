@@ -44,11 +44,37 @@ if (-not (Test-Path $MdbPath)) {
     exit 1
 }
 
-$connStr = "Provider=Microsoft.Jet.OLEDB.4.0;Data Source=$MdbPath;Jet OLEDB:Database Password=$Password;"
-$conn = New-Object System.Data.OleDb.OleDbConnection($connStr)
+$providers = @(
+    "Provider=Microsoft.Jet.OLEDB.4.0;Data Source=$MdbPath;Jet OLEDB:Database Password=$Password;",
+    "Provider=Microsoft.ACE.OLEDB.12.0;Data Source=$MdbPath;Jet OLEDB:Database Password=$Password;",
+    "Provider=Microsoft.ACE.OLEDB.16.0;Data Source=$MdbPath;Jet OLEDB:Database Password=$Password;"
+)
+
+$conn = $null
+$lastError = ""
+
+foreach ($connStr in $providers) {
+    try {
+        $c = New-Object System.Data.OleDb.OleDbConnection($connStr)
+        $c.Open()
+        $conn = $c
+        break
+    } catch {
+        $lastError = $_.Exception.Message
+        if ($c -and $c.State -eq 'Open') { $c.Close() }
+    }
+}
+
+if (-not $conn -or $conn.State -ne 'Open') {
+    if ($lastError -like "*System.EnterpriseServices*" -or $lastError -like "*manifiesto de ensamblado*") {
+        Write-Error "Libreria de Windows corrupta: System.EnterpriseServices (.NET Framework 32-bit de esta PC requiere reparacion). Ejecute 'sfc /scannow' o la 'Microsoft .NET Repair Tool'."
+    } else {
+        Write-Error "No se pudo abrir la BD Access con ningún proveedor OLEDB (Jet/ACE). Detalle: $lastError"
+    }
+    exit 1
+}
 
 try {
-    $conn.Open()
     $cmd = $conn.CreateCommand()
     $cmd.CommandText = $Query
     
@@ -73,7 +99,7 @@ try {
     $data | ConvertTo-Json -Depth 3 -Compress
     
 } catch {
-    Write-Error "Error de BD: $_"
+    Write-Error "Error de BD ejecutando consulta: $_"
     exit 1
 } finally {
     if ($conn.State -eq 'Open') { $conn.Close() }
@@ -150,8 +176,29 @@ try {
             except: pass
 
             if result.returncode != 0:
-                print(f"[DB BRIDGE] Error STDERR: {result.stderr}")
-                return None, f"Error PowerShell: {result.stderr}"
+                err_raw = result.stderr.strip()
+                print(f"[DB BRIDGE] Error STDERR: {err_raw}")
+                
+                # Detectar corrupción conocida de .NET Framework
+                if "System.EnterpriseServices" in err_raw or "manifiesto de ensamblado" in err_raw:
+                    clean_err = (
+                        "Componente de Windows dañado (System.EnterpriseServices en .NET Framework 32-bit).\n"
+                        "Solución: Ejecute 'sfc /scannow' en CMD como Administrador o use la 'Microsoft .NET Repair Tool'."
+                    )
+                else:
+                    # Limpiar traza de PowerShell para mostrar un mensaje claro al usuario
+                    lines = [line.strip() for line in err_raw.splitlines() if line.strip()]
+                    clean_lines = [l for l in lines if not l.startswith("+ CategoryInfo") and not l.startswith("+ FullyQualifiedErrorId")]
+                    if clean_lines:
+                        # Extraer el mensaje principal después de read_mdb_v1.ps1 :
+                        main_msg = clean_lines[0]
+                        if "read_mdb_v1.ps1 :" in main_msg:
+                            main_msg = main_msg.split("read_mdb_v1.ps1 :", 1)[1].strip()
+                        clean_err = main_msg
+                    else:
+                        clean_err = err_raw
+                        
+                return None, clean_err
             
             # Parsear JSON response
             output = result.stdout.strip()

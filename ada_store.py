@@ -10,9 +10,15 @@ import time
 import pandas as pd
 from contextlib import contextmanager
 
-# Configuración de Logging
+# Configuración de Logging — protegido contra APPDATA=None y directorio inexistente
+_ada_appdata = os.environ.get('APPDATA') or os.path.expanduser('~')
+_ada_log_dir = os.path.join(_ada_appdata, 'ADA_Nova')
+try:
+    os.makedirs(_ada_log_dir, exist_ok=True)
+except Exception:
+    _ada_log_dir = os.path.expanduser('~')
 logging.basicConfig(
-    filename=os.path.join(os.environ.get('APPDATA'), 'ADA_Nova', 'ada_store.log'),
+    filename=os.path.join(_ada_log_dir, 'ada_store.log'),
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s'
 )

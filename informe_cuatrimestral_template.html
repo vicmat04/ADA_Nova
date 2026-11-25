@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Informe Cuatrimestral - Infoplazas AIP</title>
+    <style>
+        @page {
+            size: A4 portrait;
+            margin: 12mm 15mm 18mm 15mm;
+            @bottom-left {
+                content: "Informe generado con ADA Nova el {{ fecha_generacion }}";
+                font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+                font-size: 8pt;
+                color: #64748b;
+                font-style: italic;
+                vertical-align: middle;
+            }
+            @bottom-right {
+                content: "Página " counter(page) " de " counter(pages);
+                font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+                font-size: 8pt;
+                color: #64748b;
+                font-weight: bold;
+                vertical-align: middle;
+            }
+        }
+        
+        body {
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            color: #1e293b;
+            background-color: #ffffff;
+            margin: 0;
+            padding: 0;
+            font-size: 9.5pt;
+            line-height: 1.35;
+        }
+
+        .document-wrapper {
+            max-width: 820px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            color: #1e293b;
+            padding: 10px 15px;
+        }
+
+        .header-container {
+            text-align: center;
+            margin-bottom: 14px;
+            color: #1e293b;
+        }
+
+        .logo-img {
+            max-height: 55px;
+            height: 55px;
+            margin-bottom: 6px;
+        }
+
+        h1.title {
+            font-size: 16pt;
+            font-weight: 800;
+            text-transform: uppercase;
+            margin: 0 0 4px 0;
+            color: #002d45;
+            letter-spacing: 0.5px;
+            text-align: center;
+        }
+
+        h2.subtitle {
+            font-size: 12pt;
+            font-weight: 600;
+            margin: 0 0 16px 0;
+            color: #475569;
+            text-align: center;
+        }
+
+        .section-title {
+            font-size: 13.5pt;
+            font-weight: 800;
+            color: #002d45;
+            margin-top: 20px;
+            margin-bottom: 10px;
+            border-left: 6px solid #005d87;
+            padding-left: 10px;
+            background-color: #e0f2fe;
+            padding-top: 6px;
+            padding-bottom: 6px;
+            border-radius: 4px;
+            letter-spacing: 0.2px;
+        }
+
+        table.data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 12px;
+            border: 1px solid #cbd5e1;
+            color: #1e293b;
+        }
+
+        table.data-table th {
+            background-color: #005d87;
+            color: #ffffff;
+            font-weight: bold;
+            font-size: 9pt;
+            padding: 6px 8px;
+            text-align: left;
+            border: 1px solid #004b6e;
+        }
+
+        table.data-table td {
+            color: #1e293b;
+            border: 1px solid #cbd5e1;
+            padding: 5px 8px;
+            font-size: 8.5pt;
+            vertical-align: middle;
+        }
+
+        .totals-table {
+            width: 55%;
+            margin-left: auto;
+            border-collapse: collapse;
+            margin-top: 4px;
+            margin-bottom: 12px;
+            border: 1px solid #94a3b8;
+            color: #1e293b;
+        }
+
+        .totals-table td {
+            color: #1e293b;
+            border: 1px solid #94a3b8;
+            padding: 5px 8px;
+            font-size: 9pt;
+        }
+
+        .obs-box {
+            border: 1px solid #64748b;
+            padding: 8px 12px;
+            min-height: 45px;
+            font-size: 8.5pt;
+            margin-top: 6px;
+            background-color: #fafafa;
+            color: #1e293b;
+            border-radius: 4px;
+        }
+
+        .annex-box {
+            margin-top: 15px;
+            padding: 10px 12px;
+            border: 1px dashed #94a3b8;
+            background-color: #f8fafc;
+            border-radius: 4px;
+            font-size: 8.5pt;
+            color: #475569;
+        }
+    </style>
+</head>
+<body>
+
+<div class="document-wrapper">
+
+    <div class="header-container">
+        {% if logo_path %}
+        <img src="{{ logo_path }}" height="55" style="height: 55px; max-height: 55px; margin-bottom: 6px;" class="logo-img" alt="Infoplazas AIP">
+        {% endif %}
+        <h1 class="title">INFORME CUATRIMESTRAL</h1>
+        <h2 class="subtitle">
+            {% if cuatrimestre == 1 %}Enero a Abril{% elif cuatrimestre == 2 %}Mayo a Agosto{% else %}Septiembre a Diciembre{% endif %} de {{ anio }}
+        </h2>
+    </div>
+
+    <!-- I. DATOS DE LA INFOPLAZA -->
+    <div class="section-title" style="font-size: 13.5pt; font-weight: bold; color: #002d45; background-color: #e0f2fe; border-left: 6px solid #005d87; padding: 7px 12px; margin-top: 18px; margin-bottom: 10px; border-radius: 4px;">
+        <b>I. Datos de la Infoplaza:</b>
+    </div>
+    <table class="data-table" border="1" cellspacing="0" cellpadding="5" bordercolor="#cbd5e1" width="100%">
+        <thead>
+            <tr>
+                <th bgcolor="#005d87" style="width: 10%; text-align: center; background-color: #005d87; color: #ffffff; font-weight: bold;">No.</th>
+                <th bgcolor="#005d87" style="width: 30%; background-color: #005d87; color: #ffffff; font-weight: bold;">Nombre</th>
+                <th bgcolor="#005d87" style="width: 20%; background-color: #005d87; color: #ffffff; font-weight: bold;">Provincia</th>
+                <th bgcolor="#005d87" style="width: 20%; background-color: #005d87; color: #ffffff; font-weight: bold;">Distrito</th>
+                <th bgcolor="#005d87" style="width: 20%; background-color: #005d87; color: #ffffff; font-weight: bold;">Corregimiento</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td align="center" style="text-align: center; font-weight: bold;">{{ infoplaza_id }}</td>
+                <td style="font-weight: bold;">{{ infoplaza_info.nombre or "Infoplaza " ~ infoplaza_id }}</td>
+                <td>{{ infoplaza_info.provincia or "N/A" }}</td>
+                <td>{{ infoplaza_info.distrito or "N/A" }}</td>
+                <td>{{ infoplaza_info.corregimiento or "N/A" }}</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <!-- II. CAPACITACIONES, TALLERES O CURSOS -->
+    <div class="section-title" style="font-size: 13.5pt; font-weight: bold; color: #002d45; background-color: #e0f2fe; border-left: 6px solid #005d87; padding: 7px 12px; margin-top: 20px; margin-bottom: 10px; border-radius: 4px;">
+        <b>II. Capacitaciones, talleres o cursos durante el cuatrimestre:</b>
+    </div>
+    <table class="data-table" border="1" cellspacing="0" cellpadding="5" bordercolor="#cbd5e1" width="100%">
+        <thead>
+            <tr>
+                <th bgcolor="#005d87" style="width: 5%; text-align: center; background-color: #005d87; color: #ffffff; font-weight: bold;">#</th>
+                <th bgcolor="#005d87" style="width: 15%; background-color: #005d87; color: #ffffff; font-weight: bold;">Mes</th>
+                <th bgcolor="#005d87" style="width: 35%; background-color: #005d87; color: #ffffff; font-weight: bold;">Tema</th>
+                <th bgcolor="#005d87" style="width: 12%; text-align: center; background-color: #005d87; color: #ffffff; font-weight: bold;">Participantes</th>
+                <th bgcolor="#005d87" style="width: 10%; text-align: center; background-color: #005d87; color: #ffffff; font-weight: bold;">Horas</th>
+                <th bgcolor="#005d87" style="width: 23%; background-color: #005d87; color: #ffffff; font-weight: bold;">Observaciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for cap in capacitaciones %}
+            <tr {% if loop.index is even %}bgcolor="#eaf4f8" style="background-color: #eaf4f8;"{% endif %}>
+                <td align="center" style="text-align: center;">{{ loop.index }}</td>
+                <td>{{ cap.mes }}</td>
+                <td style="font-weight: bold;">{{ cap.tema }}</td>
+                <td align="center" style="text-align: center;">{{ cap.participantes }}</td>
+                <td align="center" style="text-align: center;">{{ cap.horas }}</td>
+                <td>{{ cap.observaciones }}</td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="6" align="center" style="text-align: center; color: #64748b; padding: 10px;">No se registraron capacitaciones en este cuatrimestre.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <!-- TOTALES DE CAPACITACIONES -->
+    <table class="totals-table" border="1" cellspacing="0" cellpadding="5" bordercolor="#94a3b8" align="right" style="width: 55%; margin-left: auto; border-collapse: collapse; margin-top: 4px; margin-bottom: 12px;">
+        <tr bgcolor="#005d87">
+            <td colspan="2" bgcolor="#005d87" style="background-color: #005d87; color: #ffffff; font-weight: bold; font-size: 9pt;">Sumar las capacitaciones y personas beneficiadas.</td>
+        </tr>
+        <tr>
+            <td>Total de actividades de capacitación:</td>
+            <td align="right" style="font-weight: bold; text-align: right;">{{ totales_capacitaciones.total_actividades }}</td>
+        </tr>
+        <tr bgcolor="#eaf4f8" style="background-color: #eaf4f8;">
+            <td>Total de Participantes:</td>
+            <td align="right" style="font-weight: bold; text-align: right;">{{ totales_capacitaciones.total_participantes }}</td>
+        </tr>
+        <tr>
+            <td>Total de Horas:</td>
+            <td align="right" style="font-weight: bold; text-align: right;">{{ totales_capacitaciones.total_horas }}</td>
+        </tr>
+    </table>
+    <div style="clear: both;"></div>
+
+    <!-- III. SERVICIOS BRINDADOS -->
+    <div class="section-title" style="font-size: 13.5pt; font-weight: bold; color: #002d45; background-color: #e0f2fe; border-left: 6px solid #005d87; padding: 7px 12px; margin-top: 20px; margin-bottom: 10px; border-radius: 4px;">
+        <b>III. Servicios brindados en la Infoplaza a parte del Internet:</b>
+    </div>
+    <table class="data-table" border="1" cellspacing="0" cellpadding="5" bordercolor="#cbd5e1" width="100%">
+        <thead>
+            <tr>
+                <th bgcolor="#005d87" style="width: 8%; text-align: center; background-color: #005d87; color: #ffffff; font-weight: bold;">#</th>
+                <th bgcolor="#005d87" style="width: 50%; background-color: #005d87; color: #ffffff; font-weight: bold;">Tipo de servicio</th>
+                <th bgcolor="#005d87" style="width: 42%; background-color: #005d87; color: #ffffff; font-weight: bold;">Observaciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for srv in servicios %}
+            {% if srv.ofrecido %}
+            <tr {% if loop.index is even %}bgcolor="#eaf4f8" style="background-color: #eaf4f8;"{% endif %}>
+                <td align="center" style="text-align: center;">{{ loop.index }}</td>
+                <td style="font-weight: bold;">{{ srv.servicio_nombre }}</td>
+                <td>{{ srv.observaciones or "Disponible" }}</td>
+            </tr>
+            {% endif %}
+            {% else %}
+            <tr>
+                <td colspan="3" align="center" style="text-align: center; color: #64748b; padding: 10px;">Servicios recurrentes estándar de Infoplaza.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <!-- IV. OTRAS ACTIVIDADES -->
+    <div class="section-title" style="font-size: 13.5pt; font-weight: bold; color: #002d45; background-color: #e0f2fe; border-left: 6px solid #005d87; padding: 7px 12px; margin-top: 20px; margin-bottom: 10px; border-radius: 4px;">
+        <b>IV. Otras actividades realizadas:</b> <i>(que NO son capacitaciones o cursos)</i>
+    </div>
+    <table class="data-table" border="1" cellspacing="0" cellpadding="5" bordercolor="#cbd5e1" width="100%">
+        <thead>
+            <tr>
+                <th bgcolor="#005d87" style="width: 8%; text-align: center; background-color: #005d87; color: #ffffff; font-weight: bold;">#</th>
+                <th bgcolor="#005d87" style="width: 45%; background-color: #005d87; color: #ffffff; font-weight: bold;">Otras actividades</th>
+                <th bgcolor="#005d87" style="width: 47%; background-color: #005d87; color: #ffffff; font-weight: bold;">Observaciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for act in otras_actividades %}
+            <tr {% if loop.index is even %}bgcolor="#eaf4f8" style="background-color: #eaf4f8;"{% endif %}>
+                <td align="center" style="text-align: center;">{{ loop.index }}</td>
+                <td style="font-weight: bold;">{{ act.actividad }}</td>
+                <td>{{ act.observaciones }}</td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="3" align="center" style="text-align: center; color: #64748b; padding: 10px;">No se registraron otras actividades especiales.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <!-- V. ESTADÍSTICA DE VISITAS Y RENDIMIENTO CUMPLIMIENTO -->
+    <div style="page-break-before: always; page-break-inside: avoid; margin-top: 20px;">
+        <div class="section-title" style="font-size: 13.5pt; font-weight: bold; color: #002d45; background-color: #e0f2fe; border-left: 6px solid #005d87; padding: 7px 12px; margin-top: 10px; margin-bottom: 12px; border-radius: 4px;">
+            <b>V. Estadística de Visitas por Mes y Rendimiento Mensual:</b>
+        </div>
+
+        <!-- 4 KPIs SUPERIORES -->
+        <table width="100%" border="0" cellspacing="6" cellpadding="0" style="margin-bottom: 14px; width: 100%;">
+            <tr>
+                <td width="25%" align="center" bgcolor="#f8fafc" style="width: 25%; border: 1px solid #cbd5e1; background-color: #f8fafc; border-radius: 6px; padding: 8px 10px; text-align: center;">
+                    <div style="font-size: 15pt; font-weight: bold; color: #0284c7;">{{ kpis_cuatrimestre.masculino or '0' }}</div>
+                    <div style="font-size: 8pt; color: #64748b; text-transform: uppercase; font-weight: bold; margin-top: 3px;">Masculino</div>
+                </td>
+                <td width="25%" align="center" bgcolor="#f8fafc" style="width: 25%; border: 1px solid #cbd5e1; background-color: #f8fafc; border-radius: 6px; padding: 8px 10px; text-align: center;">
+                    <div style="font-size: 15pt; font-weight: bold; color: #0284c7;">{{ kpis_cuatrimestre.femenino or '0' }}</div>
+                    <div style="font-size: 8pt; color: #64748b; text-transform: uppercase; font-weight: bold; margin-top: 3px;">Femenino</div>
+                </td>
+                <td width="25%" align="center" bgcolor="#e0f2fe" style="width: 25%; border: 1px solid #7dd3fc; background-color: #e0f2fe; border-radius: 6px; padding: 8px 10px; text-align: center;">
+                    <div style="font-size: 15pt; font-weight: bold; color: #0284c7;">{{ kpis_cuatrimestre.total_visitas or '0' }}</div>
+                    <div style="font-size: 8pt; color: #0284c7; text-transform: uppercase; font-weight: bold; margin-top: 3px;">TOTAL VISITAS</div>
+                </td>
+                <td width="25%" align="center" bgcolor="#fffbeb" style="width: 25%; border: 1px solid #fde68a; background-color: #fffbeb; border-radius: 6px; padding: 8px 10px; text-align: center;">
+                    <div style="font-size: 15pt; font-weight: bold; color: #d97706;">{{ kpis_cuatrimestre.cumplimiento_pct or '0.00%' }}</div>
+                    <div style="font-size: 8pt; color: #b45309; text-transform: uppercase; font-weight: bold; margin-top: 3px;">CUMPLIMIENTO 30%</div>
+                    {% if kpis_cuatrimestre.cumplimiento_sub %}
+                    <div style="font-size: 7.5pt; color: #78350f; font-weight: 600; margin-top: 1px;">{{ kpis_cuatrimestre.cumplimiento_sub }}</div>
+                    {% endif %}
+                </td>
+            </tr>
+        </table>
+
+        <!-- CUADRO ESTADÍSTICO DE VISITAS POR MES -->
+        <div style="font-size: 11.5pt; font-weight: 800; color: #003b5c; margin-top: 16px; margin-bottom: 8px;"><b>Resumen de Visitas por Mes:</b></div>
+        <table class="data-table" border="1" cellspacing="0" cellpadding="5" bordercolor="#cbd5e1" width="100%" style="margin-bottom: 14px;">
+            <thead>
+                <tr>
+                    <th bgcolor="#005d87" style="background-color: #005d87; color: #ffffff; font-weight: bold;">MES</th>
+                    <th bgcolor="#005d87" align="center" style="text-align: center; background-color: #005d87; color: #ffffff; font-weight: bold;">Masculino</th>
+                    <th bgcolor="#005d87" align="center" style="text-align: center; background-color: #005d87; color: #ffffff; font-weight: bold;">Femenino</th>
+                    <th bgcolor="#005d87" align="center" style="text-align: center; background-color: #005d87; color: #ffffff; font-weight: bold;">Primaria</th>
+                    <th bgcolor="#005d87" align="center" style="text-align: center; background-color: #005d87; color: #ffffff; font-weight: bold;">Secundaria</th>
+                    <th bgcolor="#005d87" align="center" style="text-align: center; background-color: #005d87; color: #ffffff; font-weight: bold;">Universidad</th>
+                    <th bgcolor="#005d87" align="center" style="text-align: center; background-color: #005d87; color: #ffffff; font-weight: bold;">Docentes</th>
+                    <th bgcolor="#005d87" align="center" style="text-align: center; background-color: #005d87; color: #ffffff; font-weight: bold;">Tercera Edad</th>
+                    <th bgcolor="#005d87" align="center" style="text-align: center; background-color: #005d87; color: #ffffff; font-weight: bold;">Público Gral.</th>
+                    <th bgcolor="#005d87" align="center" style="text-align: center; background-color: #005d87; color: #ffffff; font-weight: bold;">TOTAL</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in visitas_mes %}
+                {% if row.mes in ['TOTAL', 'TOTAL GENERAL'] %}
+                <tr bgcolor="#1e293b" style="background-color: #1e293b; color: #ffffff; font-weight: bold;">
+                    <td bgcolor="#1e293b" style="font-weight: bold; color: #ffffff;">TOTAL</td>
+                    <td bgcolor="#1e293b" align="center" style="text-align: center; color: #ffffff;">{{ row.masculino }}</td>
+                    <td bgcolor="#1e293b" align="center" style="text-align: center; color: #ffffff;">{{ row.femenino }}</td>
+                    <td bgcolor="#1e293b" align="center" style="text-align: center; color: #ffffff;">{{ row.primaria }}</td>
+                    <td bgcolor="#1e293b" align="center" style="text-align: center; color: #ffffff;">{{ row.secundaria }}</td>
+                    <td bgcolor="#1e293b" align="center" style="text-align: center; color: #ffffff;">{{ row.universitarios }}</td>
+                    <td bgcolor="#1e293b" align="center" style="text-align: center; color: #ffffff;">{{ row.docentes }}</td>
+                    <td bgcolor="#1e293b" align="center" style="text-align: center; color: #ffffff;">{{ row.tercera_edad }}</td>
+                    <td bgcolor="#1e293b" align="center" style="text-align: center; color: #ffffff;">{{ row.publico_general }}</td>
+                    <td bgcolor="#1e293b" align="center" style="text-align: center; font-weight: bold; color: #ffffff;">{{ row.total_usuarios }}</td>
+                </tr>
+                {% else %}
+                <tr {% if loop.index is even %}bgcolor="#eaf4f8" style="background-color: #eaf4f8;"{% endif %}>
+                    <td style="font-weight: bold;">{{ row.mes }}</td>
+                    <td align="center" style="text-align: center;">{{ row.masculino }}</td>
+                    <td align="center" style="text-align: center;">{{ row.femenino }}</td>
+                    <td align="center" style="text-align: center;">{{ row.primaria }}</td>
+                    <td align="center" style="text-align: center;">{{ row.secundaria }}</td>
+                    <td align="center" style="text-align: center;">{{ row.universitarios }}</td>
+                    <td align="center" style="text-align: center;">{{ row.docentes }}</td>
+                    <td align="center" style="text-align: center;">{{ row.tercera_edad }}</td>
+                    <td align="center" style="text-align: center;">{{ row.publico_general }}</td>
+                    <td align="center" style="text-align: center; font-weight: bold;">{{ row.total_usuarios }}</td>
+                </tr>
+                {% endif %}
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <!-- CUADRO DE RENDIMIENTO Y CUMPLIMIENTO MENSUAL -->
+        <div style="font-size: 11.5pt; font-weight: 800; color: #003b5c; margin-top: 18px; margin-bottom: 8px; line-height: 1.5;">
+            <b>Rendimiento Mensual vs Meta, según</b> <span style="background-color: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; padding: 2px 8px; border-radius: 6px; font-weight: bold; font-size: 9pt; display: inline-block;">💻 {{ header.cant_computadoras|default(header.computadoras|default('6')) }} computadoras</span> para usuarios en la Infoplaza:
+        </div>
+        <table class="data-table" border="1" cellspacing="0" cellpadding="5" bordercolor="#cbd5e1" width="100%" style="margin-bottom: 14px;">
+            <thead>
+                <tr>
+                    <th bgcolor="#005d87" style="background-color: #005d87; color: #ffffff; font-weight: bold;">MES</th>
+                    <th bgcolor="#005d87" align="center" style="text-align: center; background-color: #005d87; color: #ffffff; font-weight: bold;">Visitas Logradas</th>
+                    <th bgcolor="#005d87" align="center" style="text-align: center; background-color: #005d87; color: #ffffff; font-weight: bold;">Meta del Mes</th>
+                    <th bgcolor="#005d87" align="center" style="text-align: center; background-color: #005d87; color: #ffffff; font-weight: bold;">% Cumplimiento</th>
+                    <th bgcolor="#005d87" align="center" style="text-align: center; background-color: #005d87; color: #ffffff; font-weight: bold;">Estado</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in rendimiento %}
+                {% if item.mes in ['TOTAL CUATRIMESTRE', 'TOTAL'] %}
+                <tr bgcolor="#1e293b" style="background-color: #1e293b; color: #ffffff; font-weight: bold;">
+                    <td bgcolor="#1e293b" style="font-weight: bold; color: #ffffff;">{{ item.mes }}</td>
+                    <td bgcolor="#1e293b" align="center" style="text-align: center; color: #ffffff;">{{ item.visitas }}</td>
+                    <td bgcolor="#1e293b" align="center" style="text-align: center; color: #ffffff;">{{ item.meta }}</td>
+                    <td bgcolor="#1e293b" align="center" style="text-align: center; font-weight: bold; color: #ffffff;">{{ item.porcentaje }}</td>
+                    <td bgcolor="#1e293b" align="center" style="text-align: center; font-weight: bold; color: #ffffff;">{{ item.estado }}</td>
+                </tr>
+                {% else %}
+                <tr {% if loop.index is even %}bgcolor="#eaf4f8" style="background-color: #eaf4f8;"{% endif %}>
+                    <td style="font-weight: bold;">{{ item.mes }}</td>
+                    <td align="center" style="text-align: center;">{{ item.visitas }}</td>
+                    <td align="center" style="text-align: center;">{{ item.meta }}</td>
+                    <td align="center" style="text-align: center; font-weight: bold;">{{ item.porcentaje }}</td>
+                    <td align="center" style="text-align: center; font-weight: bold; color: {% if 'Cumple' in item.estado or 'CUMPLE' in item.estado %}#27ae60{% elif 'Parcial' in item.estado or 'PARCIAL' in item.estado %}#f39c12{% else %}#c0392b{% endif %};">
+                        {{ item.estado }}
+                    </td>
+                </tr>
+                {% endif %}
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <!-- OBSERVACIONES GENERALES Y FIRMAS -->
+        <div class="section-title" style="font-size: 13.5pt; font-weight: bold; color: #002d45; background-color: #e0f2fe; border-left: 6px solid #005d87; padding: 7px 12px; margin-top: 18px; margin-bottom: 10px; border-radius: 4px;">
+            <b>Observaciones Generales del Dinamizador:</b>
+        </div>
+        <div class="obs-box">
+            {{ header.observaciones_generales or "Sin observaciones registradas." }}
+        </div>
+
+        <table width="100%" border="0" cellspacing="0" cellpadding="0" style="margin-top: 30px; width: 100%;">
+            <tr>
+                <td width="50%" valign="top" style="width: 50%; vertical-align: top; padding-right: 25px;">
+                    <div style="border-top: 2px solid #334155; width: 90%; margin-top: 35px; margin-bottom: 8px;"></div>
+                    <div style="font-size: 11pt; color: #1e293b; line-height: 1.7;">
+                        <span style="font-size: 13pt; font-weight: 800; color: #003b5c;">Firma del Asociado</span><br>
+                        <b style="font-size: 11.5pt;">Nombre:</b> <span style="font-size: 12pt; font-weight: 800; color: #0f172a;">{{ header.asociado_nombre or "____________________________________" }}</span><br>
+                        <b style="font-size: 11.5pt;">Cédula:</b> <span style="font-size: 11.5pt; font-weight: 800; color: #0f172a;">{{ header.asociado_cedula or "____________________________________" }}</span>
+                    </div>
+                </td>
+                <td width="50%" valign="top" style="width: 50%; vertical-align: top; padding-left: 25px;">
+                    <div style="border-top: 2px solid #334155; width: 90%; margin-top: 35px; margin-bottom: 8px;"></div>
+                    <div style="font-size: 11pt; color: #1e293b; line-height: 1.7;">
+                        <span style="font-size: 13pt; font-weight: 800; color: #003b5c;">Firma del Dinamizador</span><br>
+                        <b style="font-size: 11.5pt;">Nombre:</b> <span style="font-size: 12pt; font-weight: 800; color: #0f172a;">{{ header.dinamizador_nombre or "____________________________________" }}</span><br>
+                        <b style="font-size: 11.5pt;">Cédula:</b> <span style="font-size: 11.5pt; font-weight: 800; color: #0f172a;">{{ header.dinamizador_cedula or "____________________________________" }}</span>
+                    </div>
+                </td>
+            </tr>
+        </table>
+    </div>
+
+    <!-- VI. ANEXOS -->
+    <div class="section-title" style="font-size: 13.5pt; font-weight: bold; color: #002d45; background-color: #e0f2fe; border-left: 6px solid #005d87; padding: 7px 12px; margin-top: 20px; margin-bottom: 10px; border-radius: 4px;">
+        <b>VI. Anexos:</b>
+    </div>
+    <div class="annex-box">
+        <i>Esta sección es adjuntada manualmente por el Dinamizador al documento físico o digital con sus respectivas fotografías, certificados o listas de asistencia con pie de foto correspondiente.</i>
+    </div>
+
+</div>
+
+</body>
+</html>

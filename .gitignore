@@ -46,9 +46,11 @@ session_current.json
 *.csv
 *.xlsx
 *.log
+*.pdf
 
 # Agent files
 .agent/
 .antigravity/
 .gemini/
 graphify-out/
+supabase_credentials.json
