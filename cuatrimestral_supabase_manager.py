@@ -78,6 +78,37 @@ class CuatrimestralSupabaseManager:
             headers["Prefer"] = prefer
         return headers
 
+    def fetch_all(self, table: str, query: str = "") -> Tuple[List[Dict], Optional[str]]:
+        """Descarga todas las páginas y rechaza resultados incompletos."""
+        rows = []
+        total = None
+        try:
+            while True:
+                headers = self._headers()
+                headers.update({"Range-Unit": "items", "Range": f"{len(rows)}-{len(rows) + 999}",
+                                "Prefer": "count=exact"})
+                request = urllib.request.Request(f"{self.url}/rest/v1/{table}?{query}", headers=headers)
+                with urllib.request.urlopen(request, timeout=30) as response:
+                    chunk = json.loads(response.read() or b"[]")
+                    content_range = response.headers.get("Content-Range", "")
+                count = content_range.rsplit("/", 1)[-1]
+                if not count.isdigit():
+                    return [], f"{table}: no se recibió el total de filas del servidor"
+                page_total = int(count)
+                if total is not None and total != page_total:
+                    return [], f"{table}: cambió el total de filas durante la descarga"
+                total = page_total
+                if not isinstance(chunk, list):
+                    return [], f"{table}: respuesta inválida del servidor"
+                rows.extend(chunk)
+                if not chunk or len(chunk) < 1000 or len(rows) >= total:
+                    break
+            if len(rows) != total:
+                return [], f"{table}: descargadas {len(rows)} de {total} filas"
+            return rows, None
+        except Exception as exc:
+            return [], f"{table}: error al descargar datos: {exc}"
+
     def _request(self, endpoint: str, method: str = "GET", data: Optional[Any] = None, prefer: Optional[str] = None) -> Tuple[Optional[Any], Optional[str]]:
         """Realiza una petición HTTP a la API REST de Supabase."""
         full_url = f"{self.url}/rest/v1/{endpoint}"

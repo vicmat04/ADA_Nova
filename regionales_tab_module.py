@@ -5,14 +5,15 @@ Permite visualizar el avance nacional de entregas, comparar el cumplimiento
 entre regionales y auditar infoplazas pendientes con herramientas de exportación y copiado.
 """
 
+import os
 from datetime import datetime
 from typing import Dict, List, Any, Optional
 
 import pandas as pd
-from PyQt5.QtCore import Qt, QTimer
-from PyQt5.QtGui import QColor, QFont
+from PyQt5.QtCore import Qt, QTimer, QThread, pyqtSignal, QUrl
+from PyQt5.QtGui import QColor, QFont, QDesktopServices
 from PyQt5.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
+    QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QDialog,
     QTableWidget, QTableWidgetItem, QHeaderView, QFrame,
     QLineEdit, QProgressBar, QApplication, QMessageBox,
     QFileDialog, QSplitter, QCheckBox, QAbstractItemView,
@@ -21,6 +22,7 @@ from PyQt5.QtWidgets import (
 
 from database_manager import db
 from cuatrimestral_supabase_manager import supabase_manager
+from export_consolidado_nacional import exportar_consolidado
 
 MESES_CUATRIMESTRE_NOMBRES = {
     1: "Enero a abril",
@@ -54,6 +56,123 @@ def es_infoplaza_cerrada(info: dict) -> bool:
             return True
 
     return False
+
+
+class ExcelExitoDialog(QDialog):
+    """Confirmación de exportación con accesos para abrir el archivo o su carpeta (estilo PdfExitoDialog)."""
+    def __init__(self, ruta: str, titulo: str, subtitulo: str, parent=None, is_dark_mode=False):
+        super().__init__(parent)
+        self.ruta = ruta
+        self.setWindowTitle("Exportación Exitosa")
+        self.setMinimumWidth(620)
+        self.setModal(True)
+
+        if is_dark_mode:
+            bg, border, text, subtext = "#0f172a", "#334155", "#f8fafc", "#94a3b8"
+            path_bg, path_border = "#1e293b", "#334155"
+            sec_bg, sec_fg, sec_border, sec_hover = "#1e293b", "#f8fafc", "#334155", "#334155"
+        else:
+            bg, border, text, subtext = "#ffffff", "#cbd5e1", "#0f172a", "#475569"
+            path_bg, path_border = "#f8fafc", "#cbd5e1"
+            sec_bg, sec_fg, sec_border, sec_hover = "#f1f5f9", "#334155", "#cbd5e1", "#e2e8f0"
+
+        self.setStyleSheet(f"""
+            QDialog {{ background-color: {bg}; border: 1.5px solid {border}; border-radius: 12px; }}
+            QLabel {{ color: {text}; border: none; background: transparent; }}
+            QPushButton {{ font-size: 13px; font-weight: bold; padding: 8px 22px; border-radius: 6px; min-height: 32px; }}
+        """)
+        estilo_sec = f"""
+            QPushButton {{ background-color: {sec_bg}; color: {sec_fg}; border: 1px solid {sec_border}; }}
+            QPushButton:hover {{ background-color: {sec_hover}; }}
+        """
+
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(28, 26, 28, 26)
+        layout.setSpacing(20)
+
+        header = QHBoxLayout()
+        header.setSpacing(14)
+        lbl_icon = QLabel("📊")
+        lbl_icon.setStyleSheet("font-size: 38px; border: none;")
+        title_box = QVBoxLayout()
+        title_box.setSpacing(4)
+        lbl_title = QLabel(titulo)
+        lbl_title.setStyleSheet(f"font-size: 19px; font-weight: bold; color: {text}; border: none;")
+        lbl_sub = QLabel(subtitulo)
+        lbl_sub.setStyleSheet(f"font-size: 14px; font-weight: 500; color: {subtext}; border: none;")
+        title_box.addWidget(lbl_title)
+        title_box.addWidget(lbl_sub)
+        header.addWidget(lbl_icon)
+        header.addLayout(title_box)
+        header.addStretch()
+        layout.addLayout(header)
+
+        path_frame = QFrame()
+        path_frame.setObjectName("PathFrame")
+        path_frame.setStyleSheet(f"QFrame#PathFrame {{ background-color: {path_bg}; border: 1px solid {path_border}; border-radius: 8px; }}")
+        path_layout = QVBoxLayout(path_frame)
+        path_layout.setContentsMargins(14, 12, 14, 12)
+        path_layout.setSpacing(6)
+        lbl_path_title = QLabel("📍 RUTA DEL ARCHIVO:")
+        lbl_path_title.setStyleSheet(f"font-size: 11px; font-weight: bold; color: {subtext}; border: none;")
+        lbl_path = QLabel(ruta)
+        lbl_path.setWordWrap(True)
+        lbl_path.setTextInteractionFlags(Qt.TextSelectableByMouse)
+        lbl_path.setStyleSheet(f"font-size: 12px; font-family: 'Consolas', 'Segoe UI', monospace; color: {text}; border: none;")
+        path_layout.addWidget(lbl_path_title)
+        path_layout.addWidget(lbl_path)
+        layout.addWidget(path_frame)
+
+        botones = QHBoxLayout()
+        botones.setSpacing(12)
+        btn_carpeta = QPushButton("📁 Abrir Carpeta")
+        btn_carpeta.setCursor(Qt.PointingHandCursor)
+        btn_carpeta.setStyleSheet(estilo_sec)
+        btn_carpeta.clicked.connect(self.abrir_carpeta)
+        btn_archivo = QPushButton("📊 Abrir Excel")
+        btn_archivo.setCursor(Qt.PointingHandCursor)
+        btn_archivo.setStyleSheet("""
+            QPushButton { background-color: #059669; color: white; border: 1px solid #059669; }
+            QPushButton:hover { background-color: #047857; border-color: #047857; }
+        """)
+        btn_archivo.clicked.connect(self.abrir_archivo)
+        btn_cerrar = QPushButton("Entendido")
+        btn_cerrar.setCursor(Qt.PointingHandCursor)
+        btn_cerrar.setStyleSheet(estilo_sec)
+        btn_cerrar.clicked.connect(self.accept)
+        botones.addWidget(btn_carpeta)
+        botones.addWidget(btn_archivo)
+        botones.addStretch()
+        botones.addWidget(btn_cerrar)
+        layout.addLayout(botones)
+
+    def abrir_archivo(self):
+        if os.path.exists(self.ruta):
+            QDesktopServices.openUrl(QUrl.fromLocalFile(self.ruta))
+        self.accept()
+
+    def abrir_carpeta(self):
+        carpeta = os.path.dirname(self.ruta)
+        if os.path.exists(carpeta):
+            QDesktopServices.openUrl(QUrl.fromLocalFile(carpeta))
+        self.accept()
+
+
+class ExportConsolidadoThread(QThread):
+    """Descarga (paginada) y escribe el Consolidado Nacional sin congelar la UI."""
+    finished_ok = pyqtSignal(str, dict)
+    failed = pyqtSignal(str)
+
+    def __init__(self, anio: int, cuat: int, path: str, parent=None):
+        super().__init__(parent)
+        self.anio, self.cuat, self.path = anio, cuat, path
+
+    def run(self):
+        try:
+            filas = exportar_consolidado(supabase_manager, self.anio, self.cuat, self.path)
+            self.finished_ok.emit(self.path, filas)
+        except Exception as e:
+            self.failed.emit(str(e))
 
 
 class FlashToast(QFrame):
@@ -907,9 +1026,8 @@ class RegionalesTabWidget(QWidget):
         self._mostrar_flash_mensaje(toast_msg)
 
     def exportar_excel(self):
-        """Exporta el cuadro consolidado por regionales y el detalle nacional a Excel (.xlsx)."""
-        if not self.all_infoplazas:
-            QMessageBox.warning(self, "Sin datos", "No hay datos disponibles para exportar.")
+        """Exporta el Consolidado Nacional completo del período (Supabase, paginado) a Excel (.xlsx)."""
+        if getattr(self, '_export_thread', None) is not None and self._export_thread.isRunning():
             return
 
         anio = self.get_selected_anio()
@@ -926,66 +1044,38 @@ class RegionalesTabWidget(QWidget):
         if not path:
             return
 
-        try:
-            # Hoja 1: Resumen por Regionales
-            resumen_filas = []
-            for reg in sorted(self.regionals_data.keys()):
-                d = self.regionals_data[reg]
-                tot = d['total']
-                entr = d['entregan']
-                no_entr = d['no_entregan']
-                entreg = d['entregados']
-                pend = d['pendientes']
-                pct = (entreg / entr * 100.0) if entr > 0 else 0.0
+        self._export_periodo = (anio, cuat)
+        self._export_btn_text = self.btn_exportar.text()
+        self.btn_exportar.setEnabled(False)
+        self.btn_exportar.setText("⏳ Exportando…")
 
-                resumen_filas.append({
-                    "Regional": reg,
-                    "Total Infoplazas": tot,
-                    "Entregan Informe": entr,
-                    "No Entregan": no_entr,
-                    "Entregadas": entreg,
-                    "Pendientes": pend,
-                    "% Cumplimiento": round(pct, 1)
-                })
+        self._export_thread = ExportConsolidadoThread(anio, cuat, path, self)
+        self._export_thread.finished_ok.connect(self._on_export_ok)
+        self._export_thread.failed.connect(self._on_export_error)
+        self._export_thread.start()
 
-            df_resumen = pd.DataFrame(resumen_filas)
+    def _restaurar_btn_exportar(self):
+        self.btn_exportar.setEnabled(True)
+        self.btn_exportar.setText(getattr(self, '_export_btn_text', "📥 Exportar Consolidado"))
+        self._export_thread = None
 
-            # Hoja 2: Detalle Nacional Completo
-            detalle_filas = []
-            for info in self.all_infoplazas:
-                num = int(info.get('numero', 0)) if str(info.get('numero', '')).isdigit() else 0
-                ctrl = self.control_data.get(num, {})
-                estado = ctrl.get('estado', 'Pendiente')
-                motivo = ctrl.get('motivo', '')
+    def _on_export_ok(self, path: str, filas: dict):
+        self._restaurar_btn_exportar()
+        ExcelExitoDialog(
+            path,
+            "¡Consolidado Nacional Exportado con Éxito!",
+            "Período {} – Cuatrimestre {}".format(*self._export_periodo),
+            parent=self,
+            is_dark_mode=getattr(self, 'is_dark_mode', False),
+        ).exec_()
 
-                detalle_filas.append({
-                    "Número": num,
-                    "Nombre de Infoplaza": info.get('nombre', ''),
-                    "Regional": info.get('regional', ''),
-                    "Provincia": info.get('provincia', ''),
-                    "Distrito": info.get('distrito', ''),
-                    "Corregimiento": info.get('corregimiento', ''),
-                    "Estatus de Entrega": estado,
-                    "Motivo No Entrega": motivo
-                })
-
-            df_detalle = pd.DataFrame(detalle_filas)
-
-            with pd.ExcelWriter(path, engine='openpyxl') as writer:
-                df_resumen.to_excel(writer, sheet_name="Resumen Regionales", index=False)
-                df_detalle.to_excel(writer, sheet_name="Detalle Nacional", index=False)
-
-            QMessageBox.information(
-                self,
-                "Exportación Exitosa",
-                f"El Consolidado Nacional ha sido exportado correctamente en:\n{path}"
-            )
-        except Exception as e:
-            QMessageBox.critical(
-                self,
-                "Error al Exportar",
-                f"Ocurrió un error al intentar exportar el archivo Excel:\n{str(e)}"
-            )
+    def _on_export_error(self, mensaje: str):
+        self._restaurar_btn_exportar()
+        QMessageBox.critical(
+            self,
+            "Error al Exportar",
+            f"Ocurrió un error al intentar exportar el archivo Excel:\n{mensaje}"
+        )
 
     # =========================================================================
     # TEMAS Y ESTILOS
