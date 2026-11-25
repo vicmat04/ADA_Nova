@@ -9,7 +9,7 @@ from datetime import datetime
 from typing import Dict, List, Any, Optional
 
 import pandas as pd
-from PyQt5.QtCore import Qt, QTimer
+from PyQt5.QtCore import Qt, QTimer, QThread, pyqtSignal
 from PyQt5.QtGui import QColor, QFont
 from PyQt5.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
@@ -21,6 +21,7 @@ from PyQt5.QtWidgets import (
 
 from database_manager import db
 from cuatrimestral_supabase_manager import supabase_manager
+from export_consolidado_nacional import exportar_consolidado
 
 MESES_CUATRIMESTRE_NOMBRES = {
     1: "Enero a abril",
@@ -54,6 +55,23 @@ def es_infoplaza_cerrada(info: dict) -> bool:
             return True
 
     return False
+
+
+class ExportConsolidadoThread(QThread):
+    """Descarga (paginada) y escribe el Consolidado Nacional sin congelar la UI."""
+    finished_ok = pyqtSignal(str, dict)
+    failed = pyqtSignal(str)
+
+    def __init__(self, anio: int, cuat: int, path: str, parent=None):
+        super().__init__(parent)
+        self.anio, self.cuat, self.path = anio, cuat, path
+
+    def run(self):
+        try:
+            filas = exportar_consolidado(supabase_manager, self.anio, self.cuat, self.path)
+            self.finished_ok.emit(self.path, filas)
+        except Exception as e:
+            self.failed.emit(str(e))
 
 
 class FlashToast(QFrame):
@@ -907,9 +925,8 @@ class RegionalesTabWidget(QWidget):
         self._mostrar_flash_mensaje(toast_msg)
 
     def exportar_excel(self):
-        """Exporta el cuadro consolidado por regionales y el detalle nacional a Excel (.xlsx)."""
-        if not self.all_infoplazas:
-            QMessageBox.warning(self, "Sin datos", "No hay datos disponibles para exportar.")
+        """Exporta el Consolidado Nacional completo del período (Supabase, paginado) a Excel (.xlsx)."""
+        if getattr(self, '_export_thread', None) is not None and self._export_thread.isRunning():
             return
 
         anio = self.get_selected_anio()
@@ -926,66 +943,36 @@ class RegionalesTabWidget(QWidget):
         if not path:
             return
 
-        try:
-            # Hoja 1: Resumen por Regionales
-            resumen_filas = []
-            for reg in sorted(self.regionals_data.keys()):
-                d = self.regionals_data[reg]
-                tot = d['total']
-                entr = d['entregan']
-                no_entr = d['no_entregan']
-                entreg = d['entregados']
-                pend = d['pendientes']
-                pct = (entreg / entr * 100.0) if entr > 0 else 0.0
+        self._export_btn_text = self.btn_exportar.text()
+        self.btn_exportar.setEnabled(False)
+        self.btn_exportar.setText("⏳ Exportando…")
 
-                resumen_filas.append({
-                    "Regional": reg,
-                    "Total Infoplazas": tot,
-                    "Entregan Informe": entr,
-                    "No Entregan": no_entr,
-                    "Entregadas": entreg,
-                    "Pendientes": pend,
-                    "% Cumplimiento": round(pct, 1)
-                })
+        self._export_thread = ExportConsolidadoThread(anio, cuat, path, self)
+        self._export_thread.finished_ok.connect(self._on_export_ok)
+        self._export_thread.failed.connect(self._on_export_error)
+        self._export_thread.start()
 
-            df_resumen = pd.DataFrame(resumen_filas)
+    def _restaurar_btn_exportar(self):
+        self.btn_exportar.setEnabled(True)
+        self.btn_exportar.setText(getattr(self, '_export_btn_text', "📥 Exportar Consolidado"))
+        self._export_thread = None
 
-            # Hoja 2: Detalle Nacional Completo
-            detalle_filas = []
-            for info in self.all_infoplazas:
-                num = int(info.get('numero', 0)) if str(info.get('numero', '')).isdigit() else 0
-                ctrl = self.control_data.get(num, {})
-                estado = ctrl.get('estado', 'Pendiente')
-                motivo = ctrl.get('motivo', '')
+    def _on_export_ok(self, path: str, filas: dict):
+        self._restaurar_btn_exportar()
+        detalle = "\n".join(f"• {hoja}: {n:,} filas" for hoja, n in filas.items())
+        QMessageBox.information(
+            self,
+            "Exportación Exitosa",
+            f"El Consolidado Nacional ha sido exportado correctamente en:\n{path}\n\n{detalle}"
+        )
 
-                detalle_filas.append({
-                    "Número": num,
-                    "Nombre de Infoplaza": info.get('nombre', ''),
-                    "Regional": info.get('regional', ''),
-                    "Provincia": info.get('provincia', ''),
-                    "Distrito": info.get('distrito', ''),
-                    "Corregimiento": info.get('corregimiento', ''),
-                    "Estatus de Entrega": estado,
-                    "Motivo No Entrega": motivo
-                })
-
-            df_detalle = pd.DataFrame(detalle_filas)
-
-            with pd.ExcelWriter(path, engine='openpyxl') as writer:
-                df_resumen.to_excel(writer, sheet_name="Resumen Regionales", index=False)
-                df_detalle.to_excel(writer, sheet_name="Detalle Nacional", index=False)
-
-            QMessageBox.information(
-                self,
-                "Exportación Exitosa",
-                f"El Consolidado Nacional ha sido exportado correctamente en:\n{path}"
-            )
-        except Exception as e:
-            QMessageBox.critical(
-                self,
-                "Error al Exportar",
-                f"Ocurrió un error al intentar exportar el archivo Excel:\n{str(e)}"
-            )
+    def _on_export_error(self, mensaje: str):
+        self._restaurar_btn_exportar()
+        QMessageBox.critical(
+            self,
+            "Error al Exportar",
+            f"Ocurrió un error al intentar exportar el archivo Excel:\n{mensaje}"
+        )
 
     # =========================================================================
     # TEMAS Y ESTILOS
