@@ -113,14 +113,7 @@ class InformeCuatrimestralSyncThread(QThread):
             if not self.infoplaza_id:
                 return
             num = int(self.infoplaza_id)
-            supabase_manager.update_infoplaza_config(
-                numero=num,
-                cant_computadoras=self.header_data.get('cant_computadoras', 6),
-                asociado_nombre=self.header_data.get('asociado_nombre', ''),
-                asociado_cedula=self.header_data.get('asociado_cedula', ''),
-                dinamizador_nombre=self.header_data.get('dinamizador_nombre', ''),
-                dinamizador_cedula=self.header_data.get('dinamizador_cedula', '')
-            )
+            # push_informe_full actualiza el catálogo solo si este es el período más reciente.
             supabase_manager.push_informe_full(
                 infoplaza_numero=num,
                 anio=self.anio,
@@ -2655,7 +2648,20 @@ class InformeCuatrimestralWidget(QWidget):
                     self.txt_dinamizador_nombre.setText(format_title_case(info_maestra.get('dinamizador_nombre')))
                 if not self.txt_dinamizador_cedula.text().strip() and info_maestra.get('dinamizador_cedula'):
                     self.txt_dinamizador_cedula.setText(str(info_maestra.get('dinamizador_cedula')).strip().upper())
-                if info_maestra.get('cant_computadoras') and self.spin_pcs.value() == 6:
+
+            # PC del período: si este período aún no tiene su número propio, arrancar con el
+            # último número real registrado en un período anterior; el catálogo es el respaldo.
+            if not (header and header.get('cant_computadoras')):
+                pc_previo = None
+                try:
+                    pc_previo = supabase_manager.get_ultimo_pc_registrado(
+                        int(self.infoplaza_id), self.current_anio, self.current_cuatrimestre
+                    )
+                except Exception:
+                    pc_previo = None
+                if pc_previo:
+                    self.spin_pcs.setValue(pc_previo)
+                elif info_maestra and info_maestra.get('cant_computadoras'):
                     try:
                         self.spin_pcs.setValue(int(info_maestra.get('cant_computadoras')))
                     except Exception:
