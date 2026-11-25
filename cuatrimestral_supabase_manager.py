@@ -216,6 +216,42 @@ class CuatrimestralSupabaseManager:
                     break
         return True, None
 
+    def es_periodo_mas_reciente(self, numero: int, anio: int, cuatrimestre: int) -> bool:
+        """True si la Infoplaza no tiene ningún informe registrado en un período POSTERIOR al indicado.
+
+        Ante un error de consulta devuelve False (no se toca el catálogo si no hay certeza).
+        """
+        endpoint = (
+            f"informe_cuatrimestral_header?infoplaza_numero=eq.{int(numero)}"
+            f"&or=(anio.gt.{int(anio)},and(anio.eq.{int(anio)},cuatrimestre.gt.{int(cuatrimestre)}))"
+            f"&select=anio&limit=1"
+        )
+        res, err = self._request(endpoint, method="GET")
+        if err or res is None:
+            return False
+        return len(res) == 0
+
+    def get_ultimo_pc_registrado(self, numero: int, anio: int, cuatrimestre: int) -> Optional[int]:
+        """Devuelve la cantidad de PC del último informe registrado ANTES del período indicado.
+
+        Cada período guarda su propio número de PC; un período nuevo debe arrancar con el
+        último número real reportado, no con un valor por defecto.
+        """
+        endpoint = (
+            f"informe_cuatrimestral_header?infoplaza_numero=eq.{int(numero)}"
+            f"&cant_computadoras=gt.0"
+            f"&or=(anio.lt.{int(anio)},and(anio.eq.{int(anio)},cuatrimestre.lt.{int(cuatrimestre)}))"
+            f"&select=anio,cuatrimestre,cant_computadoras"
+            f"&order=anio.desc,cuatrimestre.desc&limit=1"
+        )
+        res, err = self._request(endpoint, method="GET")
+        if err or not res:
+            return None
+        try:
+            return int(res[0].get('cant_computadoras') or 0) or None
+        except (TypeError, ValueError):
+            return None
+
     # =========================================================================
     # INFORME CUATRIMESTRAL: SUBIDA Y SINCRONIZACIÓN (UPSERT)
     # =========================================================================
@@ -263,15 +299,17 @@ class CuatrimestralSupabaseManager:
         if res_upsert and isinstance(res_upsert, list) and len(res_upsert) > 0:
             informe_id = res_upsert[0].get('id')
 
-        # Actualizar la configuración de la Infoplaza también
-        self.update_infoplaza_config(
-            numero=infoplaza_numero,
-            cant_computadoras=header_payload['cant_computadoras'],
-            asociado_nombre=header_payload['asociado_nombre'],
-            asociado_cedula=header_payload['asociado_cedula'],
-            dinamizador_nombre=header_payload['dinamizador_nombre'],
-            dinamizador_cedula=header_payload['dinamizador_cedula']
-        )
+        # Actualizar el catálogo de la Infoplaza SOLO si este es su período más reciente;
+        # guardar un período viejo no debe pisar los datos actuales del catálogo.
+        if self.es_periodo_mas_reciente(infoplaza_numero, anio, cuatrimestre):
+            self.update_infoplaza_config(
+                numero=infoplaza_numero,
+                cant_computadoras=header_payload['cant_computadoras'],
+                asociado_nombre=header_payload['asociado_nombre'],
+                asociado_cedula=header_payload['asociado_cedula'],
+                dinamizador_nombre=header_payload['dinamizador_nombre'],
+                dinamizador_cedula=header_payload['dinamizador_cedula']
+            )
 
         if not informe_id:
             return False, "No se pudo obtener la ID de la cabecera en Supabase"
