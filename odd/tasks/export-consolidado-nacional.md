@@ -36,3 +36,4 @@ Slice note: the branch is based on `feat/dashboard-estadisticas` (9 commits ahea
 - **L6**: PC for the meta = header. PC fixes committed separately on `fix/pc-por-periodo` (30dd565).
 - **L7**: "cada uno en su propia rama. Adelante con lo demás."
 - **L8**: Implemented in 312cf51. The worker completed T1 and stopped twice before T2 (pytest unavailable; tests moved to unittest); T2-T3 finished inline. 13 unittest tests OK. Live E2E 2026 C2 matches the sample (sheets, columns, rows); Diferencias PC 99 -> 10 because the catalog was corrected after the sample.
+- **L9**: "no me gusta ese detalla que pone la ventana luego de exportar, en su caso mejor que la ventana de la opción de abrir el archivo o abrir la carpeta donde se guardó" -> ExcelExitoDialog (PdfExitoDialog style) in 14008fb.
